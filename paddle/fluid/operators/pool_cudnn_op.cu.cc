@@ -89,6 +89,19 @@ class PoolCUDNNOpKernel : public framework::OpKernel<T> {
       UpdateKsize(&ksize, data_dims);
     }
 
+    VLOG(3) << "Print paddings: ";
+    for (auto i = paddings.begin(); i != paddings.end(); ++i) {
+      VLOG(3) << *i;
+    }
+    VLOG(3) << "Print ksize: ";
+    for (auto i = ksize.begin(); i != ksize.end(); ++i) {
+      VLOG(3) << *i;
+    }
+    VLOG(3) << "Print strides: ";
+    for (auto i = strides.begin(); i != strides.end(); ++i) {
+      VLOG(3) << *i;
+    }
+
     const std::string str_NCHW = "NCHW", str_NHWC = "NHWC";
     const std::string str_NCDHW = "NCDHW", str_NDHWC = "NDHWC";
 
