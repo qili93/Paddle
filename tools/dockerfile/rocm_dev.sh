@@ -4,7 +4,7 @@
 function rocm() {
   # ROCM 3.3
   sed 's#<rocm_repo_version>#3.3#g'  Dockerfile.rocm >test/rocm33.dockerfile
-  sed -ri 's#<rocprim_version>#3.3.0g' test/rocm33.dockerfile
+  sed -ri 's#<rocprim_version>#3.3.0#g' test/rocm33.dockerfile
   sed -ri 's#<rocthrust_version>#3.3.0#g' test/rocm33.dockerfile
   sed -ri 's#<hipcub_version>#3.3.0#g' test/rocm33.dockerfile
 
