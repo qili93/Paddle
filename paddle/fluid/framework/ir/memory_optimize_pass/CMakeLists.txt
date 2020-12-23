@@ -15,4 +15,7 @@ cc_library(buffer_shared_cross_op_memory_reuse_pass SRCS buffer_shared_cross_op_
 
 cc_library(inplace_addto_op_pass SRCS inplace_addto_op_pass.cc DEPS memory_reuse_pass)
 
+if(NOT WITH_ROCM_PLATFORM)
+# To-do(qili93): fix this after ROCM code change to elementwise ops
 cc_test(test_reference_count_pass_last_lived_ops SRCS test_reference_count_pass_last_lived_ops.cc DEPS parallel_executor elementwise_mul_op elementwise_add_op scale_op)
+endif()

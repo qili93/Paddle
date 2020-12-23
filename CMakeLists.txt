@@ -149,6 +149,7 @@ option(WITH_BRPC_RDMA     "Use brpc rdma as the rpc protocal"           OFF)
 option(ON_INFER         "Turn on inference optimization and inference-lib generation" OFF)
 ################################ Internal Configurations #######################################
 option(WITH_ROCM_PLATFORM     "Compile PaddlePaddle with ROCM platform"             OFF)
+option(WITH_RCCL              "Compile PaddlePaddle with RCCL support"              OFF)
 option(WITH_NV_JETSON     "Compile PaddlePaddle with NV JETSON"             OFF)
 option(WITH_PROFILER    "Compile PaddlePaddle with GPU profiler and gperftools"        OFF)
 option(WITH_COVERAGE    "Compile PaddlePaddle with code coverage"       OFF)
@@ -292,6 +293,21 @@ if(WITH_ROCM_PLATFORM)
     find_package(HIP)
     include(hip)
 endif(WITH_ROCM_PLATFORM)
+
+if (NOT WITH_ROCM_PLATFORM AND WITH_RCCL)
+    MESSAGE(WARNING
+        "Disable RCCL when compiling without GPU. Force WITH_RCCL=OFF.")
+    set(WITH_NCCL OFF CACHE STRING
+        "Disable RCCL when compiling without GPU" FORCE)
+endif()
+
+if(WITH_RCCL)
+     add_definitions("-DPADDLE_WITH_RCCL")
+else()
+     if(WITH_ROCM_PLATFORM)
+         MESSAGE(WARNING "If the environment is multi-card, the WITH_RCCL option needs to be turned on, otherwise only a single card can be used.")
+     endif()
+endif()
 
 if(WITH_ARM)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")

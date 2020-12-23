@@ -85,7 +85,10 @@ __device__ __forceinline__ void PrintNanInfKernel(const T* value,
   if (true && threadIdx.x == 0) {
     printf("In block %d, there has %u,%u,%u nan,inf,num\n", blockIdx.x,
            nan_count, inf_count, num_count);
+#ifndef PADDLE_WITH_HIP
+    // To-do(qili93): to be fixed in enforce.h
     PADDLE_ENFORCE(false, "===ERROR: in %s find nan or inf===", debug_info);
+#endif
   }
 }
 
@@ -150,9 +153,15 @@ void TensorCheckerVisitor<platform::CUDADeviceContext>::apply(
                             "op_var2gpu_str, but now failed",
                             op_var));
 
+#ifdef PADDLE_WITH_HIP
+      PADDLE_ENFORCE_CUDA_SUCCESS(
+          hipMemcpyAsync(gpu_str_ptr, iter->first.c_str(), op_var.length() + 1,
+                         hipMemcpyHostToDevice, dev_ctx->stream()));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(
           cudaMemcpyAsync(gpu_str_ptr, iter->first.c_str(), op_var.length() + 1,
                           cudaMemcpyHostToDevice, dev_ctx->stream()));
+#endif
     } else {  // get
       auto iter = op_var2gpu_str.find(op_var);
       PADDLE_ENFORCE_EQ(iter != op_var2gpu_str.end(), true,
@@ -168,8 +177,13 @@ void TensorCheckerVisitor<platform::CUDADeviceContext>::apply(
   size_t blocks =
       std::min(static_cast<size_t>(128),
                static_cast<size_t>((tensor_.numel() + threads - 1) / threads));
+#ifdef PADDLE_WITH_HIP
+  CheckNanInfKernel<<<dim3(blocks), dim3(threads), 0, dev_ctx->stream()>>>(
+      tensor_.data<T>(), tensor_.numel(), print_num, gpu_str_ptr);
+#else
   CheckNanInfKernel<<<blocks, threads, 0, dev_ctx->stream()>>>(
       tensor_.data<T>(), tensor_.numel(), print_num, gpu_str_ptr);
+#endif
 }
 
 template <>

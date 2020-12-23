@@ -13,7 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 
 #pragma once
+#ifdef PADDLE_WITH_CUDA
 #include <cuda.h>
+#endif
+#ifdef PADDLE_WITH_HIP
+#include <hip/hip_runtime.h>
+#endif
 #include <stdio.h>
 #include "paddle/fluid/platform/float16.h"
 
@@ -48,7 +53,8 @@ CUDA_ATOMIC_WRAPPER(Add, int64_t) {
       static_cast<unsigned long long int>(val));            // NOLINT
 }
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 600
+#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 600) || \
+    defined(__HIP_DEVICE_COMPILE__)
 USE_CUDA_ATOMIC(Add, double);
 #else
 CUDA_ATOMIC_WRAPPER(Add, double) {
@@ -134,12 +140,13 @@ USE_CUDA_ATOMIC(Max, int);
 USE_CUDA_ATOMIC(Max, unsigned int);
 // CUDA API uses unsigned long long int, we cannot use uint64_t here.
 // It because unsigned long long int is not necessarily uint64_t
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
+#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350) || \
+    defined(__HIP_DEVICE_COMPILE__)
 USE_CUDA_ATOMIC(Max, unsigned long long int);  // NOLINT
 #else
 CUDA_ATOMIC_WRAPPER(Max, unsigned long long int) {  // NOLINT
   if (*address >= val) {
-    return;
+    return *address;
   }
 
   unsigned long long int old = *address, assumed;  // NOLINT
@@ -166,7 +173,7 @@ CUDA_ATOMIC_WRAPPER(Max, int64_t) {
 
 CUDA_ATOMIC_WRAPPER(Max, float) {
   if (*address >= val) {
-    return;
+    return *address;
   }
 
   int *const address_as_i = reinterpret_cast<int *>(address);
@@ -184,7 +191,7 @@ CUDA_ATOMIC_WRAPPER(Max, float) {
 
 CUDA_ATOMIC_WRAPPER(Max, double) {
   if (*address >= val) {
-    return;
+    return *address;
   }
 
   unsigned long long int *const address_as_ull =            // NOLINT
@@ -206,12 +213,13 @@ USE_CUDA_ATOMIC(Min, int);
 USE_CUDA_ATOMIC(Min, unsigned int);
 // CUDA API uses unsigned long long int, we cannot use uint64_t here.
 // It because unsigned long long int is not necessarily uint64_t
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
+#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350) || \
+    defined(__HIP_DEVICE_COMPILE__)
 USE_CUDA_ATOMIC(Min, unsigned long long int);  // NOLINT
 #else
 CUDA_ATOMIC_WRAPPER(Min, unsigned long long int) {  // NOLINT
   if (*address <= val) {
-    return;
+    return *address;
   }
 
   unsigned long long int old = *address, assumed;  // NOLINT
@@ -238,7 +246,7 @@ CUDA_ATOMIC_WRAPPER(Min, int64_t) {
 
 CUDA_ATOMIC_WRAPPER(Min, float) {
   if (*address <= val) {
-    return;
+    return *address;
   }
 
   int *const address_as_i = reinterpret_cast<int *>(address);
@@ -256,7 +264,7 @@ CUDA_ATOMIC_WRAPPER(Min, float) {
 
 CUDA_ATOMIC_WRAPPER(Min, double) {
   if (*address <= val) {
-    return;
+    return *address;
   }
 
   unsigned long long int *const address_as_ull =            // NOLINT

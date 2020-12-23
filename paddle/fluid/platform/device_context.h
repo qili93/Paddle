@@ -19,15 +19,27 @@ limitations under the License. */
 #include <vector>
 
 #include "paddle/fluid/memory/malloc.h"
-#ifdef PADDLE_WITH_CUDA
+
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 #include "paddle/fluid/platform/cuda_helper.h"
+#include "paddle/fluid/platform/gpu_info.h"
+#endif
+
+#ifdef PADDLE_WITH_CUDA
 #include "paddle/fluid/platform/dynload/cublas.h"
 #include "paddle/fluid/platform/dynload/cudnn.h"
 #include "paddle/fluid/platform/dynload/cusolver.h"
 #if !defined(__APPLE__) && defined(PADDLE_WITH_NCCL)
 #include "paddle/fluid/platform/dynload/nccl.h"
 #endif
-#include "paddle/fluid/platform/gpu_info.h"
+#endif
+
+#ifdef PADDLE_WITH_HIP
+#include "paddle/fluid/platform/dynload/miopen.h"
+#include "paddle/fluid/platform/dynload/rocblas.h"
+#if !defined(__APPLE__) && defined(PADDLE_WITH_RCCL)
+#include "paddle/fluid/platform/dynload/rccl.h"
+#endif
 #endif
 
 #ifdef PADDLE_WITH_MKLDNN
@@ -43,7 +55,17 @@ limitations under the License. */
 #ifdef PADDLE_WITH_CUDA
 #include "paddle/fluid/platform/stream/cuda_stream.h"
 #endif
+#ifdef PADDLE_WITH_HIP
+#include "paddle/fluid/platform/stream/hip_stream.h"
+#endif
 #include "unsupported/Eigen/CXX11/Tensor"
+
+#ifdef PADDLE_WITH_CUDA
+typedef cudnnHandle_t gpudnnHandle_t;
+#endif
+#ifdef PADDLE_WITH_HIP
+typedef miopenHandle_t gpudnnHandle_t;
+#endif
 
 namespace Eigen {
 struct DefaultDevice;
@@ -123,7 +145,7 @@ struct DefaultDeviceContextType<platform::XPUPlace> {
 };
 #endif
 
-#ifdef PADDLE_WITH_CUDA
+#if (defined PADDLE_WITH_CUDA || defined PADDLE_WITH_HIP)
 
 class CudnnWorkspaceHandle;
 class EigenCudaStreamDevice;
@@ -149,13 +171,15 @@ class CUDAContext {
 
   const std::unique_ptr<stream::CUDAStream>& Stream() const { return stream_; }
 
-  const cudaStream_t& RawStream() { return stream_->raw_stream(); }
+  const gpuStream_t& RawStream() { return stream_->raw_stream(); }
 
-  const cudnnHandle_t& CudnnHandle() const { return cudnn_handle_; }
+  const gpudnnHandle_t& CudnnHandle() const { return cudnn_handle_; }
 
+#ifdef PADDLE_WITH_CUDA
   const cusolverDnHandle_t& CusolverDnHandle() const {
     return cusolver_dn_handle_;
   }
+#endif
 
   const std::unique_ptr<CublasHandleHolder>& CublasHandle() const {
     return cublas_handle_;
@@ -192,6 +216,7 @@ class CUDAContext {
  private:
   void InitEigenContext();
 
+#ifdef PADDLE_WITH_CUDA
   void InitCuBlasContext() {
     cublas_handle_.reset(
         new CublasHandleHolder(RawStream(), CUBLAS_DEFAULT_MATH));
@@ -206,9 +231,17 @@ class CUDAContext {
 #endif  // CUDA_VERSION >= 9000
     }
   }
+#endif  // PADDLE_WITH_CUDA
+
+#ifdef PADDLE_WITH_HIP
+  void InitCuBlasContext() {
+    cublas_handle_.reset(new CublasHandleHolder(RawStream()));
+  }
+#endif
 
   void InitCuDNNContext() {
     if (dynload::HasCUDNN()) {
+#ifdef PADDLE_WITH_CUDA
       auto local_cudnn_version = dynload::cudnnGetVersion() / 100;
       auto compile_cudnn_version = CUDNN_VERSION / 100;
       if (local_cudnn_version < static_cast<size_t>(compile_cudnn_version)) {
@@ -225,20 +258,31 @@ class CUDAContext {
       PADDLE_RETRY_CUDA_SUCCESS(dynload::cudnnCreate(&cudnn_handle_));
       PADDLE_RETRY_CUDA_SUCCESS(
           dynload::cudnnSetStream(cudnn_handle_, RawStream()));
+#elif defined(PADDLE_WITH_HIP)
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreate(&cudnn_handle_));
+      PADDLE_ENFORCE_CUDA_SUCCESS(
+          dynload::miopenSetStream(cudnn_handle_, RawStream()));
+#endif
     } else {
       cudnn_handle_ = nullptr;
     }
   }
 
+#ifdef PADDLE_WITH_CUDA
   void InitCuSolverContext() {
     PADDLE_RETRY_CUDA_SUCCESS(dynload::cusolverDnCreate(&cusolver_dn_handle_));
     PADDLE_RETRY_CUDA_SUCCESS(
         dynload::cusolverDnSetStream(cusolver_dn_handle_, RawStream()));
   }
+#endif
 
   void DestoryCuDNNContext() {
     if (cudnn_handle_) {
+#ifdef PADDLE_WITH_CUDA
       PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroy(cudnn_handle_));
+#elif defined(PADDLE_WITH_HIP)
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroy(cudnn_handle_));
+#endif
     }
     cudnn_handle_ = nullptr;
   }
@@ -249,22 +293,26 @@ class CUDAContext {
     cublas_tf32_tensor_core_handle_.reset();
   }
 
+#ifdef PADDLE_WITH_CUDA
   void DestoryCuSolverContext() {
     if (cusolver_dn_handle_) {
       PADDLE_ENFORCE_CUDA_SUCCESS(
           dynload::cusolverDnDestroy(cusolver_dn_handle_));
     }
   }
+#endif
 
   CUDAPlace place_;
   std::unique_ptr<Eigen::GpuDevice> eigen_device_;
   std::unique_ptr<EigenCudaStreamDevice> eigen_stream_;
   std::unique_ptr<stream::CUDAStream> stream_;
-  cudnnHandle_t cudnn_handle_;
+  gpudnnHandle_t cudnn_handle_;
   std::unique_ptr<CublasHandleHolder> cublas_handle_;
   std::unique_ptr<CublasHandleHolder> cublas_tensor_core_handle_;
   std::unique_ptr<CublasHandleHolder> cublas_tf32_tensor_core_handle_;
+#ifdef PADDLE_WITH_CUDA
   cusolverDnHandle_t cusolver_dn_handle_;
+#endif
   DISABLE_COPY_AND_ASSIGN(CUDAContext);
 };
 
@@ -314,7 +362,7 @@ class CUDADeviceContext : public DeviceContext {
   }
 
   /*! \brief  Return cudnn  handle in the device context. */
-  cudnnHandle_t cudnn_handle() const;
+  gpudnnHandle_t cudnn_handle() const;
 
   /*! \brief  Return a cudnn workspace handle to call multiple cudnn
    *  functions without interrupting by other threads.
@@ -325,12 +373,14 @@ class CUDADeviceContext : public DeviceContext {
    *  sequential cudnn function calls. */
   CudnnWorkspaceHandle cudnn_workspace_handle() const;
 
+#ifdef PADDLE_WITH_CUDA
   cusolverDnHandle_t cusolver_dn_handle() const;
+#endif
 
   /*! \brief  Return cuda stream in the device context. */
-  cudaStream_t stream() const;
+  gpuStream_t stream() const;
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   /*! \brief  Return nccl communicators. */
   ncclComm_t nccl_comm() const { return nccl_comm_; }
 
@@ -339,7 +389,7 @@ class CUDADeviceContext : public DeviceContext {
 #endif
 
   template <typename Callback>
-  void RecordEvent(cudaEvent_t ev, Callback callback) const {
+  void RecordEvent(gpuEvent_t ev, Callback callback) const {
     return context()->Stream()->RecordEvent(ev, callback);
   }
 
@@ -381,7 +431,7 @@ class CUDADeviceContext : public DeviceContext {
 
   mutable std::mutex cudnn_handle_mtx_;
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   // NCCL communicator (single process version) for NCCL collective operations.
   // NCCL collective operations provides fast collectives over multiple GPUs
   // both within and across nodes.
@@ -552,8 +602,8 @@ class MKLDNNDeviceContext : public CPUDeviceContext {
   const std::string& GetKeySuffix(void) const { return key_suffix_; }
 
   // Disable adding  thread ID to the key
-  void DisableThreadInfoInKey(void) { key_attach_thread_id_ = false; };
-  bool IsThreadIdUsedInKey(void) const { return key_attach_thread_id_; };
+  void DisableThreadInfoInKey(void) { key_attach_thread_id_ = false; }
+  bool IsThreadIdUsedInKey(void) const { return key_attach_thread_id_; }
 
   // Prevent next ResetBlobMap()
   void BlockNextCacheClearing();

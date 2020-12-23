@@ -242,7 +242,8 @@ void ReduceOpHandle::RunImpl() {
         return;
       }
 
-#if defined PADDLE_WITH_CUDA && defined PADDLE_WITH_DISTRIBUTE
+#if (defined PADDLE_WITH_CUDA || defined PADDLE_WITH_HIP) && \
+    defined PADDLE_WITH_DISTRIBUTE
       if (in_selected_rows[0]->value().type() ==
           framework::proto::VarType::FP32) {
         GatherSelectedRows<platform::CUDADeviceContext, float>(
@@ -292,7 +293,7 @@ void ReduceOpHandle::RunImpl() {
         }
       });
     } else if (paddle::platform::is_gpu_place(lod_tensors[0]->place())) {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       auto pre_in = pre_in_var->Get<framework::LoDTensor>();
       VariableVisitor::ShareDimsAndLoD(*pre_in_var, out_var);
       VariableVisitor::GetMutableTensor(out_var).mutable_data(

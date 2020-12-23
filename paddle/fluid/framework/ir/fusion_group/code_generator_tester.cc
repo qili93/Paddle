@@ -29,7 +29,7 @@ class LoDTensor;
 }  // namespace framework
 }  // namespace paddle
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 
 namespace paddle {
 namespace framework {

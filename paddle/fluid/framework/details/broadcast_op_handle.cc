@@ -81,7 +81,7 @@ void BroadcastOpHandle::BroadcastOneVar(
       });
     }
   } else {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
     VarHandle *out_handle = nullptr;
     int root_id =
         BOOST_GET_CONST(platform::CUDAPlace, in_tensor.place()).device;
@@ -109,12 +109,23 @@ void BroadcastOpHandle::BroadcastOneVar(
                                .mutable_data(out_var_handle->place());
       }
 
+#ifdef PADDLE_WITH_RCCL
+      broadcast_calls.emplace_back(
+          [send_recv_buffer, numel, type, root_id, &nccl_ctx] {
+            PADDLE_ENFORCE(
+                platform::dynload::ncclBcast(
+                    send_recv_buffer, numel, static_cast<ncclDataType_t>(type),
+                    root_id, nccl_ctx.comm_, nccl_ctx.stream()),
+                "");
+          });
+#else
       broadcast_calls.emplace_back(
           [send_recv_buffer, numel, type, root_id, &nccl_ctx] {
             PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::ncclBcast(
                 send_recv_buffer, numel, static_cast<ncclDataType_t>(type),
                 root_id, nccl_ctx.comm_, nccl_ctx.stream()));
           });
+#endif
     }
 
     WaitInputVarGenerated();
