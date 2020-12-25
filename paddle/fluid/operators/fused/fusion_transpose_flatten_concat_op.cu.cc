@@ -48,8 +48,8 @@ class TransposeFlattenConcatFusionKernel : public framework::OpKernel<T> {
     std::vector<int> stride_y(max_dim, 0);
     std::vector<int> dims_y(max_dim, 0);
 
-    cudnnTensorDescriptor_t in_desc;
-    cudnnTensorDescriptor_t out_desc;
+    gpuDnnTensorDesc_t in_desc;
+    gpuDnnTensorDesc_t out_desc;
     PADDLE_ENFORCE_CUDA_SUCCESS(
         platform::dynload::cudnnCreateTensorDescriptor(&in_desc));
     PADDLE_ENFORCE_CUDA_SUCCESS(

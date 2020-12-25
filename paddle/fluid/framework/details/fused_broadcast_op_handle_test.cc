@@ -57,7 +57,7 @@ struct TestFusedBroadcastOpHandle : TestBroadcastOpHandle {
     nodes_.emplace_back(
         ir::CreateNodeForTest("fused_broadcast", ir::Node::Type::kOperation));
     if (use_gpu_) {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       op_handle_ = new FusedBroadcastOpHandle(
           nodes_.back().get(), local_scopes_, place_list_, nccl_ctxs_.get());
 #else
@@ -65,7 +65,7 @@ struct TestFusedBroadcastOpHandle : TestBroadcastOpHandle {
           platform::errors::PreconditionNotMet("Not compiled with CUDA."));
 #endif
     } else {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       op_handle_ = new FusedBroadcastOpHandle(
           nodes_.back().get(), local_scopes_, place_list_, nccl_ctxs_.get());
 #else
@@ -163,7 +163,8 @@ TEST(FusedBroadcastTester, CPUSelectedRows) {
   test_op.TestFusedBroadcastSelectedRows(input_scope_idxes);
 }
 
-#if defined(PADDLE_WITH_CUDA) && defined(PADDLE_WITH_NCCL)
+#if (defined(PADDLE_WITH_CUDA) && defined(PADDLE_WITH_NCCL)) || \
+    (defined(PADDLE_WITH_HIP) && defined(PADDLE_WITH_RCCL))
 TEST(FusedBroadcastTester, GPULodTensor) {
   TestFusedBroadcastOpHandle test_op;
   std::vector<size_t> input_scope_idxes = {0, 1};

@@ -138,9 +138,9 @@ class PoolCUDNNOpKernel : public framework::OpKernel<T> {
     ScopedTensorDescriptor output_desc;
     ScopedPoolingDescriptor pool_desc;
 
-    cudnnTensorDescriptor_t cudnn_input_desc = input_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_input_desc = input_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_input.dims()));
-    cudnnTensorDescriptor_t cudnn_output_desc = output_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_output_desc = output_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_output.dims()));
 
     PoolingMode pooling_mode;
@@ -289,9 +289,9 @@ class PoolCUDNNGradOpKernel : public framework::OpKernel<T> {
     ScopedTensorDescriptor output_desc;
     ScopedPoolingDescriptor pool_desc;
 
-    cudnnTensorDescriptor_t cudnn_input_desc = input_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_input_desc = input_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_input.dims()));
-    cudnnTensorDescriptor_t cudnn_output_desc = output_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_output_desc = output_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_output.dims()));
 
     PoolingMode pooling_mode;

@@ -99,8 +99,8 @@ class InstanceNormKernel<platform::CUDADeviceContext, T>
     auto *y = ctx.Output<Tensor>("Y");
     y->mutable_data<T>(ctx.GetPlace());
 
-    cudnnTensorDescriptor_t data_desc_;
-    cudnnTensorDescriptor_t in_param_desc_;
+    gpuDnnTensorDesc_t data_desc_;
+    gpuDnnTensorDesc_t in_param_desc_;
 
     PADDLE_ENFORCE_CUDA_SUCCESS(
         platform::dynload::cudnnCreateTensorDescriptor(&data_desc_));
@@ -332,8 +332,8 @@ class InstanceNormGradKernel<platform::CUDADeviceContext, T>
       return;
     }
 
-    cudnnTensorDescriptor_t data_desc_;
-    cudnnTensorDescriptor_t in_param_desc_;
+    gpuDnnTensorDesc_t data_desc_;
+    gpuDnnTensorDesc_t in_param_desc_;
 
     PADDLE_ENFORCE_CUDA_SUCCESS(
         platform::dynload::cudnnCreateTensorDescriptor(&data_desc_));

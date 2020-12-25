@@ -1,7 +1,7 @@
 if(WIN32)
     cc_test(nccl_context_test SRCS nccl_context_test.cc DEPS device_context)
 else()
-    if (WITH_NCCL)
+    if (WITH_NCCL OR WITH_RCCL)
         cc_test(nccl_context_test SRCS nccl_context_test.cc DEPS nccl_context)
     endif()
 endif(WIN32)

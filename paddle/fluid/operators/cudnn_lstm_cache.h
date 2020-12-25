@@ -129,16 +129,16 @@ class ScopedRNNBase {
             handle, rnn_desc_.desc(), seq_length_, x_descs_.data(),
             reserve_size));
   }
-  cudnnTensorDescriptor_t* x_descs() { return x_descs_.data(); }
-  cudnnTensorDescriptor_t* y_descs() { return y_descs_.data(); }
+  gpuDnnTensorDesc_t* x_descs() { return x_descs_.data(); }
+  gpuDnnTensorDesc_t* y_descs() { return y_descs_.data(); }
 #if CUDNN_VERSION >= 7201
   cudnnRNNDataDescriptor_t x_seq_desc() { return x_seq_desc_.desc(); }
   cudnnRNNDataDescriptor_t y_seq_desc() { return y_seq_desc_.desc(); }
 #endif
-  cudnnTensorDescriptor_t init_h_desc() { return init_h_desc_.desc(); }
-  cudnnTensorDescriptor_t init_c_desc() { return init_c_desc_.desc(); }
-  cudnnTensorDescriptor_t last_h_desc() { return last_h_desc_.desc(); }
-  cudnnTensorDescriptor_t last_c_desc() { return last_c_desc_.desc(); }
+  gpuDnnTensorDesc_t init_h_desc() { return init_h_desc_.desc(); }
+  gpuDnnTensorDesc_t init_c_desc() { return init_c_desc_.desc(); }
+  gpuDnnTensorDesc_t last_h_desc() { return last_h_desc_.desc(); }
+  gpuDnnTensorDesc_t last_c_desc() { return last_c_desc_.desc(); }
   cudnnRNNDescriptor_t rnn_desc() { return rnn_desc_.desc(); }
   cudnnDropoutDescriptor_t dropout_desc() { return dropout_desc_.desc(); }
   cudnnFilterDescriptor_t weight_desc() { return weight_desc_.desc(); }
@@ -154,8 +154,8 @@ class ScopedRNNBase {
   int weight_numel_;
   bool initialized_;
   bool is_bidirec_;
-  std::vector<cudnnTensorDescriptor_t> x_descs_;
-  std::vector<cudnnTensorDescriptor_t> y_descs_;
+  std::vector<gpuDnnTensorDesc_t> x_descs_;
+  std::vector<gpuDnnTensorDesc_t> y_descs_;
 
   platform::ScopedTensorDescriptor x_desc_;
   platform::ScopedTensorDescriptor y_desc_;

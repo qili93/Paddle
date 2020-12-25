@@ -48,7 +48,7 @@ struct TestBroadcastOpHandle {
   std::vector<std::unique_ptr<ir::Node>> nodes_;
   std::vector<p::Place> place_list_;
   bool use_gpu_;
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   std::unique_ptr<platform::NCCLContextMap> nccl_ctxs_;
 #endif
 
@@ -56,7 +56,7 @@ struct TestBroadcastOpHandle {
     for (size_t j = 0; j < ctxs_.size(); ++j) {
       ctxs_[j]->Wait();
     }
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
     if (nccl_ctxs_) {
       nccl_ctxs_->WaitAll();
     }
@@ -66,7 +66,7 @@ struct TestBroadcastOpHandle {
   void InitCtxOnGpu(bool use_gpu) {
     use_gpu_ = use_gpu;
     if (use_gpu_) {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       int count = p::GetCUDADeviceCount();
       if (count <= 1) {
         LOG(WARNING) << "Cannot test multi-gpu Broadcast, because the CUDA "
@@ -91,7 +91,7 @@ struct TestBroadcastOpHandle {
         place_list_.push_back(p);
         ctxs_.emplace_back(new p::CPUDeviceContext(p));
       }
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       nccl_ctxs_.reset(nullptr);
 #endif
     }
@@ -112,7 +112,7 @@ struct TestBroadcastOpHandle {
     nodes_.emplace_back(
         ir::CreateNodeForTest("node0", ir::Node::Type::kOperation));
     if (use_gpu_) {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       op_handle_ = new BroadcastOpHandle(nodes_.back().get(), local_scopes_,
                                          place_list_, nccl_ctxs_.get());
 #else
@@ -120,7 +120,7 @@ struct TestBroadcastOpHandle {
           platform::errors::PreconditionNotMet("Not compiled with NCLL."));
 #endif
     } else {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       op_handle_ = new BroadcastOpHandle(nodes_.back().get(), local_scopes_,
                                          place_list_, nccl_ctxs_.get());
 #else

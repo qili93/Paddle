@@ -19,12 +19,22 @@ namespace memory {
 namespace allocation {
 bool CPUPinnedAllocator::IsAllocThreadSafe() const { return true; }
 void CPUPinnedAllocator::FreeImpl(Allocation *allocation) {
-  PADDLE_ENFORCE_CUDA_SUCCESS(cudaFreeHost(allocation->ptr()));
+#ifdef PADDLE_WITH_CUDA
+  PADDLE_ENFORCE_EQ(cudaFreeHost(allocation->ptr()), true);
+#endif
+#ifdef PADDLE_WITH_HIP
+  PADDLE_ENFORCE_EQ(hipHostFree(allocation->ptr()), true);
+#endif
   delete allocation;
 }
 Allocation *CPUPinnedAllocator::AllocateImpl(size_t size) {
   void *ptr;
-  PADDLE_ENFORCE_CUDA_SUCCESS(cudaHostAlloc(&ptr, size, cudaHostAllocPortable));
+#ifdef PADDLE_WITH_CUDA
+  PADDLE_ENFORCE_EQ(cudaHostAlloc(&ptr, size, cudaHostAllocPortable), true);
+#endif
+#ifdef PADDLE_WITH_HIP
+  PADDLE_ENFORCE_EQ(hipHostMalloc(&ptr, size, hipHostMallocPortable), true);
+#endif
   return new Allocation(ptr, size, platform::CUDAPinnedPlace());
 }
 }  // namespace allocation

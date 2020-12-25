@@ -20,7 +20,7 @@ register_operators(EXCLUDES
 op_library(fusion_gru_op)
 file(APPEND ${pybind_file} "USE_CPU_ONLY_OP(fusion_gru);\n")
 
-if (WITH_GPU)
+if (WITH_GPU OR WITH_ROCM_PLATFORM)
     # fused_bn_activation_op needs cudnn 7.4.1 above
     if (NOT ${CUDNN_VERSION} VERSION_LESS 7401)
         op_library(fused_bn_activation_op)

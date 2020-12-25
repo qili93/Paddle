@@ -82,16 +82,16 @@ class CUDNNConvInceptionFusionOpKernel : public framework::OpKernel<T> {
     cudnnPoolingDescriptor_t cudnn_pool_desc =
         pool_desc.descriptor(pooling_mode, k3x3, k1x1, k1x1);
 
-    cudnnTensorDescriptor_t cudnn_input_desc = input_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_input_desc = input_desc.descriptor<T>(
         layout, framework::vectorize<int>(input->dims()));
-    cudnnTensorDescriptor_t pool_out_desc = out_pool_desc.descriptor<T>(
+    gpuDnnTensorDesc_t pool_out_desc = out_pool_desc.descriptor<T>(
         layout, framework::vectorize<int>(input->dims()));
 
     cudnnDataType_t cudnn_dtype = CudnnDataType<T>::type;
-    cudnnTensorDescriptor_t* out_desc = new cudnnTensorDescriptor_t[4];
+    gpuDnnTensorDesc_t* out_desc = new gpuDnnTensorDesc_t[4];
     cudnnFilterDescriptor_t* filter_desc = new cudnnFilterDescriptor_t[4];
-    cudnnTensorDescriptor_t* bias_desc = new cudnnTensorDescriptor_t[4];
-    cudnnTensorDescriptor_t* in_desc = new cudnnTensorDescriptor_t[4];
+    gpuDnnTensorDesc_t* bias_desc = new gpuDnnTensorDesc_t[4];
+    gpuDnnTensorDesc_t* in_desc = new gpuDnnTensorDesc_t[4];
     cudnnConvolutionDescriptor_t* conv_desc =
         new cudnnConvolutionDescriptor_t[4];
     for (int i = 0; i < 4; ++i) {
@@ -243,8 +243,8 @@ class CUDNNConvInceptionFusionOpKernel : public framework::OpKernel<T> {
       workspace_handle.RunFunc(func, workspace_size_in_bytes);
     }
 
-    cudnnTensorDescriptor_t x_desc;
-    cudnnTensorDescriptor_t y_desc;
+    gpuDnnTensorDesc_t x_desc;
+    gpuDnnTensorDesc_t y_desc;
     PADDLE_ENFORCE_CUDA_SUCCESS(
         platform::dynload::cudnnCreateTensorDescriptor(&x_desc));
     PADDLE_ENFORCE_CUDA_SUCCESS(

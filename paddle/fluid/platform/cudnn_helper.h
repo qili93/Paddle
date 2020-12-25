@@ -18,10 +18,41 @@ limitations under the License. */
 #include <vector>
 
 #include "paddle/fluid/framework/operator.h"
-#include "paddle/fluid/platform/dynload/cudnn.h"
 #include "paddle/fluid/platform/enforce.h"
 #include "paddle/fluid/platform/float16.h"
 #include "paddle/fluid/platform/macros.h"
+
+#ifdef PADDLE_WITH_CUDA
+#include "paddle/fluid/platform/dynload/cudnn.h"
+typedef cudnnStatus_t gpuDnnStatus_t;
+typedef cudnnHandle_t gpuDnnHandle_t;
+typedef cudnnDataType_t gpuDnnDataType_t;
+typedef cudnnTensorDescriptor_t gpuDnnTensorDesc_t;
+typedef cudnnRNNDescriptor_t gpuDnnRNNDesc_t;
+typedef cudnnConvolutionDescriptor_t gpuDNNConvolutionDesc_t;
+typedef cudnnPoolingDescriptor_t gpuDnnPoolingDesc_t;
+typedef cudnnActivationDescriptor_t gpuDnnActivationDesc_t;
+typedef cudnnActivationMode_t gpuDnnActivationMode_t;
+typedef cudnnCTCLossDescriptor_t gpuDnnCTCLossDesc_t;
+#define GPUDNN_DATA_HALF CUDNN_DATA_HALF
+#define GPUDNN_DATA_FLOAT CUDNN_DATA_FLOAT
+#endif
+
+#ifdef PADDLE_WITH_HIP
+#include "paddle/fluid/platform/dynload/miopen.h"
+typedef miopenStatus_t gpuDnnStatus_t;
+typedef miopenHandle_t gpuDnnHandle_t;
+typedef miopenDataType_t gpuDnnDataType_t;
+typedef miopenTensorDescriptor_t gpuDnnTensorDesc_t;
+typedef miopenRNNDescriptor_t gpuDnnRNNDesc_t;
+typedef miopenConvolutionDescriptor_t gpuDNNConvolutionDesc_t;
+typedef miopenPoolingDescriptor_t gpuDnnPoolingDesc_t;
+typedef miopenActivationDescriptor_t gpuDnnActivationDesc_t;
+typedef miopenActivationMode_t gpuDnnActivationMode_t;
+typedef miopenCTCLossDescriptor_t gpuDnnCTCLossDesc_t;
+#define GPUDNN_DATA_HALF miopenHalf
+#define GPUDNN_DATA_FLOAT miopenFloat
+#endif
 
 namespace paddle {
 namespace platform {
@@ -34,7 +65,28 @@ DECLARE_bool(cudnn_deterministic);
 namespace paddle {
 namespace platform {
 
-inline const char* cudnnGetErrorString(cudnnStatus_t status) {
+inline const char* cudnnGetErrorString(gpuDnnStatus_t status) {
+#ifdef PADDLE_WITH_HIP
+  switch (status) {
+    case miopenStatusSuccess:
+      return "MIOPEN_STATUS_SUCCESS";
+    case miopenStatusNotInitialized:
+      return "MIOPEN_STATUS_NOT_INITIALIZED";
+    case miopenStatusInvalidValue:
+      return "MIOPEN_STATUS_INVALID_VALUE";
+    case miopenStatusBadParm:
+      return "MIOPEN_STATUS_BAD_PARAM";
+    case miopenStatusAllocFailed:
+      return "MIOPEN_STATUS_ALLOC_FAILED";
+    case miopenStatusInternalError:
+      return "MIOPEN_STATUS_INTERNAL_ERROR";
+    case miopenStatusNotImplemented:
+      return "MIOPEN_STATUS_NOT_IMPLEMENTED";
+    case miopenStatusUnknownError:
+    default:
+      return "MIOPEN_STATUS_UNKNOWN_ERROR";
+  }
+#else
   switch (status) {
     case CUDNN_STATUS_SUCCESS:
       return "CUDNN_STATUS_SUCCESS";
@@ -61,6 +113,7 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
     default:
       return "Unknown cudnn error number";
   }
+#endif
 }
 
 #define CUDNN_VERSION_MIN(major, minor, patch) \
@@ -90,8 +143,22 @@ enum class ActivationMode {
   kTanh,
   kBandPass,
 };
-
-#if CUDNN_VERSION < 6000
+#if defined(PADDLE_WITH_HIP)
+inline miopenPoolingMode_t GetPoolingMode(const PoolingMode& mode) {
+  switch (mode) {
+    case PoolingMode::kMaximumDeterministic:
+      return miopenPoolingMax;
+    case PoolingMode::kAverageExclusive:
+      return miopenPoolingAverage;
+    case PoolingMode::kAverageInclusive:
+      return miopenPoolingAverageInclusive;
+    case PoolingMode::kMaximum:
+      return miopenPoolingMax;
+    default:
+      PADDLE_THROW("Unexpected pooling mode.");
+  }
+}
+#elif defined(PADDLE_WITH_CUDA) && CUDNN_VERSION < 6000
 #pragma message "CUDNN version under 6.0 is supported at best effort."
 #pragma message "We strongly encourage you to move to 6.0 and above."
 #pragma message "This message is intended to annoy you enough to update."
@@ -159,7 +226,7 @@ class CudnnDataType;
 template <>
 class CudnnDataType<float16> {
  public:
-  static const cudnnDataType_t type = CUDNN_DATA_HALF;
+  static const gpuDnnDataType_t type = GPUDNN_DATA_HALF;
   // The scaling param type is float for HALF and FLOAT tensors
   using ScalingParamType = const float;
   using BatchNormParamType = float;
@@ -176,7 +243,7 @@ class CudnnDataType<float16> {
 template <>
 class CudnnDataType<float> {
  public:
-  static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
+  static const gpuDnnDataType_t type = GPUDNN_DATA_FLOAT;
   using ScalingParamType = const float;
   using BatchNormParamType = float;
   static ScalingParamType* kOne() {
@@ -189,10 +256,11 @@ class CudnnDataType<float> {
   }
 };
 
+#ifdef PADDLE_WITH_CUDA
 template <>
 class CudnnDataType<double> {
  public:
-  static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
+  static const gpuDnnDataType_t type = CUDNN_DATA_DOUBLE;
   using ScalingParamType = const double;
   using BatchNormParamType = double;
   static ScalingParamType* kOne() {
@@ -204,7 +272,13 @@ class CudnnDataType<double> {
     return &v;
   }
 };
+#endif
 
+#ifdef PADDLE_WITH_HIP
+inline std::string GetCudnnTensorFormat(const DataLayout& order) {
+  return "NCHW";
+}
+#else
 inline cudnnTensorFormat_t GetCudnnTensorFormat(
     const DataLayout& order) {  // Not use
   switch (order) {
@@ -222,20 +296,67 @@ inline cudnnTensorFormat_t GetCudnnTensorFormat(
   }
   return CUDNN_TENSOR_NCHW;
 }
+#endif
 
 class ScopedTensorDescriptor {
  public:
   ScopedTensorDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreateTensorDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnCreateTensorDescriptor(&desc_));
+#endif
   }
   ~ScopedTensorDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroyTensorDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroyTensorDescriptor(desc_));
+#endif
   }
 
-  inline cudnnTensorDescriptor_t descriptor(const cudnnTensorFormat_t format,
-                                            const cudnnDataType_t type,
-                                            const std::vector<int>& dims,
-                                            const int groups = 1) {
+#ifdef PADDLE_WITH_HIP
+  inline miopenTensorDescriptor_t descriptor(const std::string format,
+                                             const miopenDataType_t type,
+                                             const std::vector<int>& dims,
+                                             const int groups = 1) {
+    // the format is not used now, will add later
+    std::vector<int> strides(dims.size());
+    strides[dims.size() - 1] = 1;
+    for (int i = dims.size() - 2; i >= 0; i--) {
+      strides[i] = dims[i + 1] * strides[i + 1];
+    }
+    // Update tensor descriptor dims setting if groups > 1
+    // NOTE: Here, Assume using NCHW or NCDHW order
+    std::vector<int> dims_with_group(dims.begin(), dims.end());
+    if (groups > 1) {
+      dims_with_group[1] = dims_with_group[1] / groups;
+    }
+
+    if (dims.size() == 4) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
+          desc_, type, dims_with_group.size(), dims_with_group.data(),
+          strides.data()));
+    } else if (dims.size() == 5) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
+          desc_, type, dims_with_group.size(), dims_with_group.data(),
+          strides.data()));
+    }
+    return desc_;
+  }
+
+  template <typename T>
+  inline miopenTensorDescriptor_t descriptor(const DataLayout& order,
+                                             const std::vector<int>& dims,
+                                             const int groups = 1) {
+    return descriptor(GetCudnnTensorFormat(order), CudnnDataType<T>::type, dims,
+                      groups);
+  }
+#else
+  inline gpuDnnTensorDesc_t descriptor(const cudnnTensorFormat_t format,
+                                       const gpuDnnDataType_t type,
+                                       const std::vector<int>& dims,
+                                       const int groups = 1) {
     // the format is not used now, will add later
     std::vector<int> strides(dims.size());
     strides[dims.size() - 1] = 1;
@@ -272,35 +393,36 @@ class ScopedTensorDescriptor {
   }
 
   template <typename T>
-  inline cudnnTensorDescriptor_t descriptor(const DataLayout& order,
-                                            const std::vector<int>& dims,
-                                            const int groups = 1) {
+  inline gpuDnnTensorDesc_t descriptor(const DataLayout& order,
+                                       const std::vector<int>& dims,
+                                       const int groups = 1) {
     return descriptor(GetCudnnTensorFormat(order), CudnnDataType<T>::type, dims,
                       groups);
   }
 
-  inline cudnnTensorDescriptor_t descriptor(const cudnnDataType_t cudnn_type,
-                                            const std::vector<int>& dim,
-                                            const std::vector<int>& stride) {
+  inline gpuDnnTensorDesc_t descriptor(const gpuDnnDataType_t cudnn_type,
+                                       const std::vector<int>& dim,
+                                       const std::vector<int>& stride) {
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnSetTensorNdDescriptor(
         desc_, cudnn_type, dim.size(), dim.data(), stride.data()));
     return desc_;
   }
+#endif
 
   template <typename T>
-  inline cudnnTensorDescriptor_t descriptor(const std::vector<int>& dim,
-                                            const std::vector<int>& stride) {
+  inline gpuDnnTensorDesc_t descriptor(const std::vector<int>& dim,
+                                       const std::vector<int>& stride) {
     return descriptor(CudnnDataType<T>::type, dim, stride);
   }
 
-  inline cudnnTensorDescriptor_t desc() { return desc_; }
+  inline gpuDnnTensorDesc_t desc() { return desc_; }
 
  private:
-  cudnnTensorDescriptor_t desc_;
+  gpuDnnTensorDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedTensorDescriptor);
 };
 
-#if CUDNN_VERSION >= 7201
+#if defined(PADDLE_WITH_CUDA) && CUDNN_VERSION >= 7201
 class ScopedRNNTensorDescriptor {
  public:
   ScopedRNNTensorDescriptor() {
@@ -312,7 +434,7 @@ class ScopedRNNTensorDescriptor {
   }
 
   inline cudnnRNNDataDescriptor_t descriptor(
-      const cudnnDataType_t cudnn_type, int max_seq_length, int batch_size,
+      const gpuDnnDataType_t cudnn_type, int max_seq_length, int batch_size,
       int input_size, bool time_major, const std::vector<int>& seq_length) {
     static double padding_fill = 0.0f;
     cudnnRNNDataLayout_t layout;
@@ -346,6 +468,7 @@ class ScopedRNNTensorDescriptor {
 };
 #endif
 
+#if defined(PADDLE_WITH_CUDA)
 class ScopedDropoutDescriptor {
  public:
   ScopedDropoutDescriptor() {
@@ -385,23 +508,80 @@ class ScopedDropoutDescriptor {
   cudnnDropoutDescriptor_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedDropoutDescriptor);
 };
+#endif
 
 class ScopedRNNDescriptor {
  public:
   ScopedRNNDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreateRNNDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnCreateRNNDescriptor(&desc_));
+#endif
   }
   ~ScopedRNNDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroyRNNDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroyRNNDescriptor(desc_));
+#endif
   }
 
-  inline cudnnRNNDescriptor_t desc() { return desc_; }
+  inline gpuDnnRNNDesc_t desc() { return desc_; }
 
  private:
-  cudnnRNNDescriptor_t desc_;
+  gpuDnnRNNDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedRNNDescriptor);
 };
 
+#ifdef PADDLE_WITH_HIP
+class ScopedFilterDescriptor {
+ public:
+  ScopedFilterDescriptor() {
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreateTensorDescriptor(&desc_));
+  }
+  ~ScopedFilterDescriptor() PADDLE_MAY_THROW {
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroyTensorDescriptor(desc_));
+  }
+
+  inline miopenTensorDescriptor_t descriptor(const std::string format,
+                                             const miopenDataType_t type,
+                                             const std::vector<int>& kernel,
+                                             const int groups = 1) {
+    std::vector<int> strides(kernel.size());
+    strides[kernel.size() - 1] = 1;
+    for (int i = kernel.size() - 2; i >= 0; i--) {
+      strides[i] = kernel[i + 1] * strides[i + 1];
+    }
+
+    // filter layout: MCHW(MCDHW), where M is the number of
+    // output image channels, C is the number of input image channels,
+    // D is the depth of the filter, H is the height of the filter, and W is the
+    // width of the filter.
+    std::vector<int> kernel_with_group(kernel.begin(), kernel.end());
+    if (groups > 1) {
+      kernel_with_group[0] /= groups;
+      // NOTE: input filter(C) of the filter is already asserted to be C/groups.
+    }
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
+        desc_, type, kernel_with_group.size(), kernel_with_group.data(),
+        strides.data()));
+    return desc_;
+  }
+
+  template <typename T>
+  inline miopenTensorDescriptor_t descriptor(const DataLayout& order,
+                                             const std::vector<int>& kernel,
+                                             const int groups = 1) {
+    return descriptor(GetCudnnTensorFormat(order), CudnnDataType<T>::type,
+                      kernel, groups);
+  }
+
+ private:
+  miopenTensorDescriptor_t desc_;
+  DISABLE_COPY_AND_ASSIGN(ScopedFilterDescriptor);
+};
+#else
 class ScopedFilterDescriptor {
  public:
   ScopedFilterDescriptor() {
@@ -412,7 +592,7 @@ class ScopedFilterDescriptor {
   }
 
   inline cudnnFilterDescriptor_t descriptor(const cudnnTensorFormat_t format,
-                                            const cudnnDataType_t type,
+                                            const gpuDnnDataType_t type,
                                             const std::vector<int>& kernel,
                                             const int groups = 1) {
     // filter layout: MCHW(MCDHW), where M is the number of
@@ -444,21 +624,33 @@ class ScopedFilterDescriptor {
   cudnnFilterDescriptor_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedFilterDescriptor);
 };
+#endif
 
 class ScopedConvolutionDescriptor {
  public:
   ScopedConvolutionDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        dynload::miopenCreateConvolutionDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         dynload::cudnnCreateConvolutionDescriptor(&desc_));
+#endif
   }
   ~ScopedConvolutionDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        dynload::miopenDestroyConvolutionDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         dynload::cudnnDestroyConvolutionDescriptor(desc_));
+#endif
   }
 
-  inline cudnnConvolutionDescriptor_t descriptor(
-      cudnnDataType_t type, const std::vector<int>& pads,
-      const std::vector<int>& strides, const std::vector<int>& dilations) {
+  inline gpuDNNConvolutionDesc_t descriptor(gpuDnnDataType_t type,
+                                            const std::vector<int>& pads,
+                                            const std::vector<int>& strides,
+                                            const std::vector<int>& dilations) {
     PADDLE_ENFORCE_EQ(pads.size(), strides.size(),
                       platform::errors::InvalidArgument(
                           "The size of pads and strides should be equal. But "
@@ -471,7 +663,7 @@ class ScopedConvolutionDescriptor {
             "of pads is %d, size of dilations is %d.",
             pads.size(), dilations.size()));
 
-#if !CUDNN_VERSION_MIN(6, 0, 0)
+#if defined(PADDLE_WITH_CUDA) && !CUDNN_VERSION_MIN(6, 0, 0)
     // cudnn v5 does not support dilation conv, the argument is called upscale
     // instead of dilations and it is must be one.
     for (size_t i = 0; i < dilations.size(); ++i) {
@@ -484,39 +676,56 @@ class ScopedConvolutionDescriptor {
     }
 #endif
 
-    cudnnDataType_t compute_type =
-        (type == CUDNN_DATA_DOUBLE) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+#ifdef PADDLE_WITH_HIP
+    miopenConvolutionMode_t compute_mode = miopenConvolution;
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenInitConvolutionNdDescriptor(
+        desc_, pads.size(), const_cast<int*>(pads.data()),
+        const_cast<int*>(strides.data()), const_cast<int*>(dilations.data()),
+        compute_mode));
+#else
+    gpuDnnDataType_t compute_type =
+        (type == CUDNN_DATA_DOUBLE) ? CUDNN_DATA_DOUBLE : GPUDNN_DATA_FLOAT;
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnSetConvolutionNdDescriptor(
         desc_, pads.size(), pads.data(), strides.data(), dilations.data(),
         CUDNN_CROSS_CORRELATION, compute_type));
+#endif
+
     return desc_;
   }
 
   template <typename T>
-  inline cudnnConvolutionDescriptor_t descriptor(
-      const std::vector<int>& pads, const std::vector<int>& strides,
-      const std::vector<int>& dilations) {
+  inline gpuDNNConvolutionDesc_t descriptor(const std::vector<int>& pads,
+                                            const std::vector<int>& strides,
+                                            const std::vector<int>& dilations) {
     return descriptor(CudnnDataType<T>::type, pads, strides, dilations);
   }
 
  private:
-  cudnnConvolutionDescriptor_t desc_;
+  gpuDNNConvolutionDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedConvolutionDescriptor);
 };
 
 class ScopedPoolingDescriptor {
  public:
   ScopedPoolingDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreatePoolingDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnCreatePoolingDescriptor(&desc_));
+#endif
   }
   ~ScopedPoolingDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroyPoolingDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroyPoolingDescriptor(desc_));
+#endif
   }
 
-  inline cudnnPoolingDescriptor_t descriptor(const PoolingMode& mode,
-                                             const std::vector<int>& kernel,
-                                             const std::vector<int>& pads,
-                                             const std::vector<int>& strides) {
+  inline gpuDnnPoolingDesc_t descriptor(const PoolingMode& mode,
+                                        const std::vector<int>& kernel,
+                                        const std::vector<int>& pads,
+                                        const std::vector<int>& strides) {
     PADDLE_ENFORCE_EQ(kernel.size(), pads.size(),
                       platform::errors::InvalidArgument(
                           "The size of kernel and pads should be equal. But "
@@ -528,18 +737,26 @@ class ScopedPoolingDescriptor {
             "The size of kernel and strides should be equal. But "
             "received size of kernel is %d, size of strides is %d.",
             kernel.size(), strides.size()));
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetNdPoolingDescriptor(
+        desc_, (GetPoolingMode(mode)), kernel.size(),
+        const_cast<int*>(kernel.data()), const_cast<int*>(pads.data()),
+        const_cast<int*>(strides.data())));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnSetPoolingNdDescriptor(
         desc_, (GetPoolingMode(mode)),
         CUDNN_PROPAGATE_NAN,  // Always propagate nans.
         kernel.size(), kernel.data(), pads.data(), strides.data()));
+#endif
     return desc_;
   }
 
  private:
-  cudnnPoolingDescriptor_t desc_;
+  gpuDnnPoolingDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedPoolingDescriptor);
 };
 
+#ifdef PADDLE_WITH_CUDA
 class ScopedSpatialTransformerDescriptor {
  public:
   ScopedSpatialTransformerDescriptor() {
@@ -563,24 +780,63 @@ class ScopedSpatialTransformerDescriptor {
   cudnnSpatialTransformerDescriptor_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedSpatialTransformerDescriptor);
 };
+#endif
 
 class ScopedActivationDescriptor {
  public:
   ScopedActivationDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        dynload::miopenCreateActivationDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         dynload::cudnnCreateActivationDescriptor(&desc_));
+#endif
   }
   ~ScopedActivationDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        dynload::miopenDestroyActivationDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         dynload::cudnnDestroyActivationDescriptor(desc_));
+#endif
   }
 
   template <typename T>
-  inline cudnnActivationDescriptor_t descriptor(
+  inline gpuDnnActivationDesc_t descriptor(
       const std::string& act, double value_max = static_cast<double>(0.)) {
     double relu_ceiling = 0.0;
     ActivationMode activation_mode = StringToActivationMode(act);
-    cudnnActivationMode_t mode;
+    gpuDnnActivationMode_t mode;
+#ifdef PADDLE_WITH_HIP
+    switch (activation_mode) {
+      case ActivationMode::kNone:
+        mode = miopenActivationPASTHRU;
+        break;
+      case ActivationMode::kRelu6:
+        relu_ceiling = 6.0;
+        mode = miopenActivationCLIPPEDRELU;
+        break;
+      case ActivationMode::kReluX:
+        relu_ceiling = value_max;
+        mode = miopenActivationCLIPPEDRELU;
+        break;
+      case ActivationMode::kRelu:
+        mode = miopenActivationRELU;
+        break;
+      case ActivationMode::kSigmoid:
+        mode = miopenActivationLOGISTIC;
+        break;
+      case ActivationMode::kTanh:
+        mode = miopenActivationTANH;
+        break;
+      default:
+        PADDLE_THROW(platform::errors::Unimplemented(
+            "Unrecognized MIOPEN activation mode: %d.",
+            static_cast<int>(activation_mode)));
+    }
+#else
     switch (activation_mode) {
 #if CUDNN_VERSION >= 7100
       case ActivationMode::kNone:
@@ -611,18 +867,19 @@ class ScopedActivationDescriptor {
     }
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnSetActivationDescriptor(
         desc_, mode, CUDNN_NOT_PROPAGATE_NAN, relu_ceiling));
+#endif
     return desc_;
   }
 
  private:
-  cudnnActivationDescriptor_t desc_;
+  gpuDnnActivationDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedActivationDescriptor);
 };
 
 inline bool CanCUDNNBeUsed(const framework::ExecutionContext& ctx) {
   bool use_cudnn = ctx.Attr<bool>("use_cudnn");
   use_cudnn &= paddle::platform::is_gpu_place(ctx.GetPlace());
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   if (use_cudnn) {
     auto& dev_ctx = ctx.device_context<platform::CUDADeviceContext>();
     use_cudnn &= dev_ctx.cudnn_handle() != nullptr;
@@ -631,25 +888,39 @@ inline bool CanCUDNNBeUsed(const framework::ExecutionContext& ctx) {
   return use_cudnn;
 }
 
-#if CUDNN_VERSION >= 7001
+#if defined(PADDLE_WITH_HIP) || \
+    (defined(PADDLE_WITH_CUDA) && CUDNN_VERSION >= 7001)
 class ScopedCTCLossDescriptor {
  public:
   ScopedCTCLossDescriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreateCTCLossDescriptor(&desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnCreateCTCLossDescriptor(&desc_));
+#endif
   }
   ~ScopedCTCLossDescriptor() PADDLE_MAY_THROW {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroyCTCLossDescriptor(desc_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroyCTCLossDescriptor(desc_));
+#endif
   }
 
   template <typename T>
-  inline cudnnCTCLossDescriptor_t descriptor() {
+  inline gpuDnnCTCLossDesc_t descriptor() {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        dynload::miopenSetCTCLossDescriptor(desc_, 0, CudnnDataType<T>::type));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         dynload::cudnnSetCTCLossDescriptor(desc_, CudnnDataType<T>::type));
+#endif
     return desc_;
   }
 
  private:
-  cudnnCTCLossDescriptor_t desc_;
+  gpuDnnCTCLossDesc_t desc_;
   DISABLE_COPY_AND_ASSIGN(ScopedCTCLossDescriptor);
 };
 #endif

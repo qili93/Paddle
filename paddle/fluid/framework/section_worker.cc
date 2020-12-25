@@ -9,7 +9,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include <float.h>
 #include "paddle/fluid/framework/executor_gc_helper.h"
 #include "paddle/fluid/framework/garbage_collector.h"
@@ -80,7 +80,11 @@ void SectionWorker::TrainFiles() {
         }
       }
     }
+#ifdef PADDLE_WITH_RCCL
+    hipDeviceSynchronize();
+#else
     cudaDeviceSynchronize();
+#endif
   }
 
   // backward pass
@@ -99,7 +103,11 @@ void SectionWorker::TrainFiles() {
         }
       }
     }
+#ifdef PADDLE_WITH_RCCL
+    hipDeviceSynchronize();
+#else
     cudaDeviceSynchronize();
+#endif
   }
 
   // update pass

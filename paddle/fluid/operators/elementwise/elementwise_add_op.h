@@ -20,11 +20,16 @@ limitations under the License. */
 #include "paddle/fluid/operators/elementwise/elementwise_op_function.h"
 #include "paddle/fluid/operators/math/blas.h"
 #include "paddle/fluid/operators/math/math_function.h"
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 #ifdef __NVCC__
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include "cub/cub.cuh"
+#endif
+#ifdef __HIPCC__
+#include <hip/hip_fp16.h>
+#include <hip/hip_runtime.h>
+#include <hipcub/hipcub.hpp>
 #endif
 #endif
 
@@ -126,9 +131,8 @@ elementwise_add_grad(const framework::ExecutionContext &ctx,
   default_elementwise_add_grad<DeviceContext, T>(ctx, x, y, out, dout, dx, dy);
 }
 
-#ifdef PADDLE_WITH_CUDA
-#ifdef __NVCC__
-
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#if defined(__NVCC__) || defined(__HIPICC__)
 template <typename T, int Size>
 struct alignas(sizeof(T) * Size) AlignedVector {
   T val[Size];
@@ -183,7 +187,7 @@ template <int SIZE>
 __global__ void VecFP16MatrixColReduce(const __half2 *__restrict__ in,
                                        __half2 *__restrict__ out, size_t width,
                                        size_t height) {
-#if CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_ARCH__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
   int by = blockIdx.y;
   __half2 zero = __half2half2(static_cast<__half>(0));
@@ -285,7 +289,7 @@ bool static RunSpecialDims(const framework::DDim &dx_dims,
   return true;
 }
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 // cuda definition
 template <typename DeviceContext, typename T>
 typename std::enable_if<
@@ -313,8 +317,8 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
     // skip out
     auto *out = dout;
 
-#ifdef PADDLE_WITH_CUDA
-#ifdef __NVCC__
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#if defined(__NVCC__) || defined(__HIPICC__)
 
     int axis = ctx.Attr<int>("axis");
     if (ctx.GetPlace() == platform::CUDAPlace() && dx != nullptr &&

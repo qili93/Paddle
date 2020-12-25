@@ -26,13 +26,6 @@ if(WIN32)
     set(EIGEN_TAG        917060c364181f33a735dc023818d5a54f60e54c)
 endif()
 
-# eigen on cuda9.1 missing header of math_funtions.hpp
-# https://stackoverflow.com/questions/43113508/math-functions-hpp-not-found-when-using-cuda-with-eigen
-if(WITH_ROCM_PLATFORM)
-    set(EIGEN_REPOSITORY ${GIT_URL}/sabreshao/hipeigen.git)
-    set(EIGEN_TAG        7cb2b6e5a4b4a1efe658abb215cd866c6fb2275e)
-endif()
-
 cache_third_party(extern_eigen3
     REPOSITORY    ${EIGEN_REPOSITORY}
     TAG           ${EIGEN_TAG}
@@ -62,37 +55,21 @@ endif()
 set(EIGEN_INCLUDE_DIR ${EIGEN_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIR})
 
-if(WITH_AMD_GPU)
-    ExternalProject_Add(
-        extern_eigen3
-        ${EXTERNAL_PROJECT_LOG_ARGS}
-        ${SHALLOW_CLONE}
-        "${EIGEN_DOWNLOAD_CMD}"
-        PREFIX          ${EIGEN_PREFIX_DIR}
-        SOURCE_DIR      ${EIGEN_SOURCE_DIR}
-        UPDATE_COMMAND    ""
-        PATCH_COMMAND   ${EIGEN_PATCH_COMMAND}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND     ""
-        INSTALL_COMMAND   ""
-        TEST_COMMAND      ""
-    )
-else()
-    ExternalProject_Add(
-        extern_eigen3
-        ${EXTERNAL_PROJECT_LOG_ARGS}
-        ${SHALLOW_CLONE}
-        "${EIGEN_DOWNLOAD_CMD}"
-        PREFIX          ${EIGEN_PREFIX_DIR}
-        SOURCE_DIR      ${EIGEN_SOURCE_DIR}
-        UPDATE_COMMAND    ""
-        PATCH_COMMAND   ${EIGEN_PATCH_COMMAND}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND     ""
-        INSTALL_COMMAND   ""
-        TEST_COMMAND      ""
-    )
-endif()
+ExternalProject_Add(
+    extern_eigen3
+    ${EXTERNAL_PROJECT_LOG_ARGS}
+    ${SHALLOW_CLONE}
+    "${EIGEN_DOWNLOAD_CMD}"
+    PREFIX          ${EIGEN_PREFIX_DIR}
+    SOURCE_DIR      ${EIGEN_SOURCE_DIR}
+    CMAKE_ARGS      -DEIGEN_USE_HIP=ON
+    UPDATE_COMMAND    ""
+    PATCH_COMMAND   ${EIGEN_PATCH_COMMAND}
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND     ""
+    INSTALL_COMMAND   ""
+    TEST_COMMAND      ""
+)
 
 add_library(eigen3 INTERFACE)
 

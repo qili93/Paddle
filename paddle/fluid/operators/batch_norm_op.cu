@@ -99,8 +99,8 @@ class BatchNormKernel<platform::CUDADeviceContext, T>
     }
 
     // ------------------- cudnn descriptors ---------------------
-    cudnnTensorDescriptor_t data_desc_;
-    cudnnTensorDescriptor_t bn_param_desc_;
+    gpuDnnTensorDesc_t data_desc_;
+    gpuDnnTensorDesc_t bn_param_desc_;
     cudnnBatchNormMode_t mode_;
 
     PADDLE_ENFORCE_CUDA_SUCCESS(
@@ -626,8 +626,8 @@ class BatchNormGradKernel<platform::CUDADeviceContext, T>
       }
 
       // ------------------- cudnn descriptors ---------------------
-      cudnnTensorDescriptor_t data_desc_;
-      cudnnTensorDescriptor_t bn_param_desc_;
+      gpuDnnTensorDesc_t data_desc_;
+      gpuDnnTensorDesc_t bn_param_desc_;
       cudnnBatchNormMode_t mode_;
 
       PADDLE_ENFORCE_CUDA_SUCCESS(

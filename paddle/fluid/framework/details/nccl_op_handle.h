@@ -21,7 +21,12 @@
 #include "paddle/fluid/framework/details/op_handle_base.h"
 #include "paddle/fluid/framework/lod_tensor.h"
 #include "paddle/fluid/framework/scope.h"
+#ifdef PADDLE_WITH_CUDA
 #include "paddle/fluid/platform/dynload/nccl.h"
+#endif
+#ifdef PADDLE_WITH_HIP
+#include "paddle/fluid/platform/dynload/rccl.h"
+#endif
 #include "paddle/fluid/platform/nccl_helper.h"
 
 DECLARE_bool(sync_nccl_allreduce);
@@ -46,10 +51,18 @@ class NCCLOpHandleBase : public OpHandleBase {
   }
   virtual ~NCCLOpHandleBase() {
     for (auto& ev : inter_events_) {
+#ifdef PADDLE_WITH_RCCL
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipEventDestroy(ev.second));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventDestroy(ev.second));
+#endif
     }
     for (auto& ev : exter_events_) {
+#ifdef PADDLE_WITH_RCCL
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipEventDestroy(ev.second));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventDestroy(ev.second));
+#endif
     }
   }
   void SetRunEnv(int run_order, bool use_hierarchical_allreduce) {
@@ -94,11 +107,19 @@ class NCCLOpHandleBase : public OpHandleBase {
         continue;
       }
 
+#ifdef PADDLE_WITH_HIP
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipSetDevice(dev_id));
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipEventCreateWithFlags(
+          &inter_events_[dev_id], hipEventDisableTiming));
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipEventCreateWithFlags(
+          &exter_events_[dev_id], hipEventDisableTiming));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaSetDevice(dev_id));
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventCreateWithFlags(
           &inter_events_[dev_id], cudaEventDisableTiming));
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventCreateWithFlags(
           &exter_events_[dev_id], cudaEventDisableTiming));
+#endif
       VLOG(10) << "Create events on dev_id:" << dev_id
                << ", inter_event:" << &inter_events_[dev_id]
                << ", exter_event:" << &exter_events_[dev_id];
@@ -175,10 +196,18 @@ class NCCLOpHandleBase : public OpHandleBase {
     PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::ncclReduce(
         sendbuff, recvbuff, count, datatype, ncclSum, 0, comm, stream));
 
+#ifdef PADDLE_WITH_HIP
+    hipEventRecord(inter_events_.at(dev_id), stream);
+#else
     cudaEventRecord(inter_events_.at(dev_id), stream);
+#endif
 
     if (FLAGS_sync_nccl_allreduce) {
+#ifdef PADDLE_WITH_HIP
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamSynchronize(stream));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+#endif
     }
   }
 
@@ -199,16 +228,27 @@ class NCCLOpHandleBase : public OpHandleBase {
              << ", dev_id:" << dev_id << ", dtype:" << datatype
              << ", place:" << place << ", stream:" << stream;
 
+#ifdef PADDLE_WITH_HIP
+    hipStreamWaitEvent(stream, inter_events_.at(dev_id), 0);
+
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::ncclAllReduce(
+        sendbuff, recvbuff, count, datatype, op, comm, stream));
+    hipEventRecord(exter_events_.at(dev_id), stream);
+
+    if (FLAGS_sync_nccl_allreduce) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamSynchronize(stream));
+    }
+#else
     cudaStreamWaitEvent(stream, inter_events_.at(dev_id), 0);
 
     PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::ncclAllReduce(
         sendbuff, recvbuff, count, datatype, op, comm, stream));
-
     cudaEventRecord(exter_events_.at(dev_id), stream);
 
     if (FLAGS_sync_nccl_allreduce) {
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
     }
+#endif
   }
 
   void InterBroadCast(platform::Place place, void* sendbuff, size_t count,
@@ -223,8 +263,11 @@ class NCCLOpHandleBase : public OpHandleBase {
              << ", numel:" << count << ", dev_id:" << dev_id
              << ", dtype:" << datatype << ", place:" << place
              << ", stream:" << stream;
-
+#ifdef PADDLE_WITH_HIP
+    hipStreamWaitEvent(stream, exter_events_.at(dev_id), 0);
+#else
     cudaStreamWaitEvent(stream, exter_events_.at(dev_id), 0);
+#endif
     PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::ncclBcast(
         sendbuff, count, datatype, 0, comm, stream));
   }
@@ -240,9 +283,14 @@ class NCCLOpHandleBase : public OpHandleBase {
   bool use_hierarchical_allreduce_{false};
 
  private:
-  // hierarchical needed events
+// hierarchical needed events
+#ifdef PADDLE_WITH_HIP
+  std::unordered_map<int, hipEvent_t> inter_events_;
+  std::unordered_map<int, hipEvent_t> exter_events_;
+#else
   std::unordered_map<int, cudaEvent_t> inter_events_;
   std::unordered_map<int, cudaEvent_t> exter_events_;
+#endif
 };
 
 }  // namespace details

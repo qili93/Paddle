@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License. */
 
 #include <algorithm>
-#include <cub/cub.cuh>  // NOLINT
+#include "cub/cub.cuh"  // NOLINT
 #include "paddle/fluid/operators/math.h"
 #include "paddle/fluid/operators/sequence_ops/sequence_softmax_op.h"
 

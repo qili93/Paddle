@@ -169,16 +169,16 @@ class CUDNNConvFusionOpKernel : public framework::OpKernel<T> {
         platform::dynload::cudnnSetConvolutionGroupCount(cudnn_conv_desc,
                                                          groups));
 
-    cudnnTensorDescriptor_t cudnn_input_desc = input_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_input_desc = input_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_input.dims()));
-    cudnnTensorDescriptor_t cudnn_output_desc = output_desc.descriptor<T>(
+    gpuDnnTensorDesc_t cudnn_output_desc = output_desc.descriptor<T>(
         layout, framework::vectorize<int>(transformed_output.dims()));
     cudnnFilterDescriptor_t cudnn_filter_desc = filter_desc.descriptor<T>(
         layout, framework::vectorize<int>(filter->dims()));
     // Now only support NCHW
     std::vector<int> bias_dim = {
         1, static_cast<int>(transformed_output.dims()[1]), 1, 1};
-    cudnnTensorDescriptor_t cudnn_bias_desc =
+    gpuDnnTensorDesc_t cudnn_bias_desc =
         bias_desc.descriptor<T>(layout, bias_dim);
     cudnnActivationDescriptor_t cudnn_act_desc =
         act_desc.descriptor<T>(activation);

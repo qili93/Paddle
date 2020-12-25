@@ -85,6 +85,10 @@ class EagerDeletionOpHandle : public OpHandleBase {
   platform::CUDADeviceContext *dev_ctx_{nullptr};
   cudaEvent_t event_{nullptr};
 #endif
+#ifdef PADDLE_WITH_HIP
+  platform::CUDADeviceContext *dev_ctx_{nullptr};
+  hipEvent_t event_{nullptr};
+#endif
 };
 
 }  // namespace details
