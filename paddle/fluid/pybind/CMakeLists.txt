@@ -68,7 +68,7 @@ if(WITH_PYTHON)
 
   if (WITH_NCCL OR WITH_RCCL)
     list(APPEND OP_FUNCTION_GENERETOR_DEPS nccl_context)
-  endif(WITH_NCCL)
+  endif()
 
   add_executable(op_function_generator op_function_generator.cc)
   target_link_libraries(op_function_generator ${OP_FUNCTION_GENERETOR_DEPS})

@@ -171,14 +171,6 @@ RUN echo "export PATH=/opt/rocm/bin:/opt/rocm/hcc/bin:/opt/rocm/hip/bin:/opt/roc
 # fix rocthrust
 RUN sed -i '21 a #include <thrust/system/hip/config.h>' /opt/rocm/include/thrust/system/hip/detail/error.inl
 
-# add hipDNN
-WORKDIR /opt
-RUN wget https://github.com/ROCmSoftwarePlatform/hipDNN/archive/master.zip && \
-    unzip master.zip && rm -rf master.zip
-RUN sed -i '31 a #include <hip/hip_fp16.h>' /opt/hipDNN-master/library/src/hcc_detail/hipdnn_miopen.cpp && \
-    sed -i 's/hc::half/__half/g' /opt/hipDNN-master/library/src/hcc_detail/hipdnn_miopen.cpp
-RUN cd hipDNN-master && mkdir -p build && cd build && cmake .. && make -j8 && make install
-
 # add gdb and lldb
 RUN apt-get update && apt-get install gdb lldb -y
 
