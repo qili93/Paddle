@@ -20,7 +20,7 @@
 #include "paddle/fluid/platform/dynload/cublas.h"
 #endif
 #ifdef PADDLE_WITH_HIP
-#include "paddle/fluid/platform/dynload/rocblas.h"
+#include "paddle/fluid/platform/dynload/hipblas.h"
 #endif
 #include "paddle/fluid/platform/enforce.h"
 #include "paddle/fluid/platform/gpu_info.h"
@@ -38,7 +38,7 @@ typedef cublasHandle_t gpublasHandle_t;
 #endif
 
 #ifdef PADDLE_WITH_HIP
-typedef rocblas_handle gpublasHandle_t;
+typedef hipblasHandle_t gpublasHandle_t;
 #endif
 
 /*
@@ -111,8 +111,8 @@ class CublasHandleHolder {
 
 #ifdef PADDLE_WITH_HIP
   explicit CublasHandleHolder(gpuStream_t stream) {
-    PADDLE_RETRY_CUDA_SUCCESS(dynload::rocblas_create_handle(&handle_));
-    PADDLE_RETRY_CUDA_SUCCESS(dynload::rocblas_set_stream(handle_, stream));
+    PADDLE_RETRY_CUDA_SUCCESS(dynload::hipblasCreate(&handle_));
+    PADDLE_RETRY_CUDA_SUCCESS(dynload::hipblasSetStream	(handle_, stream));
   }
 #endif
 
@@ -120,7 +120,7 @@ class CublasHandleHolder {
 #ifdef PADDLE_WITH_CUDA
     PADDLE_RETRY_CUDA_SUCCESS(dynload::cublasDestroy(handle_));
 #elif defined(PADDLE_WITH_HIP)
-    PADDLE_RETRY_CUDA_SUCCESS(dynload::rocblas_destroy_handle(handle_));
+    PADDLE_RETRY_CUDA_SUCCESS(dynload::hipblasDestroy(handle_));
 #endif
   }
 

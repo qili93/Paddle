@@ -29,11 +29,11 @@ typedef cudnnPoolingMode_t gpuDnnPoolingMode_t;
 #endif
 
 #ifdef PADDLE_WITH_HIP
-#define GPUDNN_CROSS_CORRELATION miopenConvolution
-#define GPUDNN_POOLING_MAX miopenPoolingMax
-typedef miopenDataType_t gpuDnnDataType_t;
-typedef miopenConvolutionMode_t gpuDnnConvolutionMode_t;
-typedef miopenPoolingMode_t gpuDnnPoolingMode_t;
+#define GPUDNN_CROSS_CORRELATION HIPDNN_CROSS_CORRELATION
+#define GPUDNN_POOLING_MAX HIPDNN_POOLING_MAX
+typedef hipdnnDataType_t gpuDnnDataType_t;
+typedef hipdnnConvolutionMode_t gpuDnnConvolutionMode_t;
+typedef hipdnnPoolingMode_t gpuDnnPoolingMode_t;
 #endif
 
 TEST(CudnnHelper, ScopedTensorDescriptor) {
@@ -49,8 +49,8 @@ TEST(CudnnHelper, ScopedTensorDescriptor) {
   std::vector<int> dims(4);
   std::vector<int> strides(4);
 #ifdef PADDLE_WITH_HIP
-  paddle::platform::dynload::miopenGetTensorDescriptor(desc, &type, dims.data(),
-                                                       strides.data());
+  paddle::platform::dynload::hipdnnGetTensorNdDescriptor(
+      desc, 4, &type, &nd, dims.data(), strides.data());
 #else
   paddle::platform::dynload::cudnnGetTensorNdDescriptor(
       desc, 4, &type, &nd, dims.data(), strides.data());
@@ -74,8 +74,8 @@ TEST(CudnnHelper, ScopedTensorDescriptor) {
   std::vector<int> dims_5d(5);
   std::vector<int> strides_5d(5);
 #ifdef PADDLE_WITH_HIP
-  paddle::platform::dynload::miopenGetTensorDescriptor(
-      desc_5d, &type, dims_5d.data(), strides_5d.data());
+  paddle::platform::dynload::hipdnnGetTensorNdDescriptor(
+      desc_5d, 5, &type, &nd, dims_5d.data(), strides_5d.data());
 #else
   paddle::platform::dynload::cudnnGetTensorNdDescriptor(
       desc_5d, 5, &type, &nd, dims_5d.data(), strides_5d.data());
@@ -147,8 +147,9 @@ TEST(CudnnHelper, ScopedConvolutionDescriptor) {
   std::vector<int> strides(3);
   std::vector<int> dilations(3);
 #ifdef PADDLE_WITH_HIP
-  paddle::platform::dynload::miopenGetConvolutionNdDescriptor(
-      desc, 3, &nd, pads.data(), strides.data(), dilations.data(), &mode);
+  paddle::platform::dynload::hipdnnGetConvolutionNdDescriptor(
+      desc, 3, &nd, pads.data(), strides.data(), dilations.data(), &mode,
+      &type);
 #else
   paddle::platform::dynload::cudnnGetConvolutionNdDescriptor(
       desc, 3, &nd, pads.data(), strides.data(), dilations.data(), &mode,
@@ -176,19 +177,20 @@ TEST(CudnnHelper, ScopedPoolingDescriptor) {
   auto desc = pool_desc.descriptor(PoolingMode::kMaximum, src_kernel, src_pads,
                                    src_strides);
 
-  miopenPoolingMode_t mode;
+  hipdnnPoolingMode_t mode;
+  hipdnnNanPropagation_t nan_t = HIPDNN_PROPAGATE_NAN;
   std::vector<int> kernel(2);
   std::vector<int> pads(2);
   std::vector<int> strides(2);
-  paddle::platform::dynload::miopenGet2dPoolingDescriptor(
-      desc, &mode, kernel.data(),kernel.data()+1, pads.data(),pads.data()+1, strides.data(),strides.data()+1);
+  paddle::platform::dynload::hipdnnGetPooling2dDescriptor(
+      desc, &mode, &nan_t, kernel.data(),kernel.data()+1, pads.data(),pads.data()+1, strides.data(),strides.data()+1);
 
   for (size_t i = 0; i < src_pads.size(); ++i) {
     EXPECT_EQ(kernel[i], src_kernel[i]);
     EXPECT_EQ(pads[i], src_pads[i]);
     EXPECT_EQ(strides[i], src_strides[i]);
   }
-  EXPECT_EQ(mode, miopenPoolingMax);
+  EXPECT_EQ(mode, HIPDNN_POOLING_MAX);
 }
 #else
 TEST(CudnnHelper, ScopedPoolingDescriptor) {

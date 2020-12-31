@@ -155,7 +155,7 @@ class HeterServiceContext {
   int place_num_;
   Scope* scope_{nullptr};
 #ifdef PADDLE_WITH_CUDA
-  cudaEvent_t event_;
+  gpuEvent_t event_;
 #elif defined(PADDLE_WITH_HIP)
   hipEvent_t event_;
 #endif
@@ -191,7 +191,7 @@ class HeterXpuTrainer : public TrainerBase {
 #if defined(PADDLE_WITH_CUDA)
   void HeterMemCpy(LoDTensor* tensor, LoDTensor* root_tensor,
                    const paddle::platform::Place& thread_place,
-                   cudaStream_t stream);
+                   gpuStream_t stream);
 #elif definded(PADDLE_WITH_HIP)
   void HeterMemCpy(LoDTensor* tensor, LoDTensor* root_tensor,
                    const paddle::platform::Place& thread_place,
@@ -228,8 +228,8 @@ class HeterXpuTrainer : public TrainerBase {
   BtObjectPool<HeterServiceContext> object_pool_;
   std::vector<platform::Place> places_;
 #ifdef PADDLE_WITH_CUDA
-  std::vector<cudaStream_t> copy_streams_;
-  std::vector<cudaEvent_t> events_;
+  std::vector<gpuStream_t> copy_streams_;
+  std::vector<gpuEvent_t> events_;
 #elif defined(PADDLE_WITH_HIP)
   std::vector<hipStream_t> copy_streams_;
   std::vector<hipEvent_t> events_;
@@ -258,7 +258,7 @@ class HeterBoxTrainer : public TrainerBase {
 #ifdef PADDLE_WITH_CUDA
   void HeterMemCpy(LoDTensor* tensor, LoDTensor* root_tensor,
                    const paddle::platform::Place& thread_place,
-                   cudaStream_t stream);
+                   gpuStream_t stream);
 #elif defined(PADDLE_WITH_HIP)
   void HeterMemCpy(LoDTensor* tensor, LoDTensor* root_tensor,
                    const paddle::platform::Place& thread_place,
@@ -285,8 +285,8 @@ class HeterBoxTrainer : public TrainerBase {
   int use_ps_gpu_;
   int thread_num_;
 #ifdef PADDLE_WITH_CUDA
-  std::vector<cudaStream_t> copy_streams_;
-  std::vector<cudaEvent_t> events_;
+  std::vector<gpuStream_t> copy_streams_;
+  std::vector<gpuEvent_t> events_;
 #elif defined(PADDLE_WITH_HIP)
   std::vector<hipStream_t> copy_streams_;
   std::vector<hipEvent_t> events_;
@@ -319,7 +319,7 @@ class PSGPUTrainer : public TrainerBase {
   template <typename T>
   void HeterMemCpy(LoDTensor* tensor, LoDTensor* root_tensor,
                    const paddle::platform::Place& thread_place,
-                   cudaStream_t stream);
+                   gpuStream_t stream);
   */
 
   template <typename T>

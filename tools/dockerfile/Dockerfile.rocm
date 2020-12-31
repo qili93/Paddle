@@ -182,6 +182,13 @@ RUN cd hipDNN-master && mkdir -p build && cd build && cmake .. && make -j8 && ma
 # add gdb and lldb
 RUN apt-get update && apt-get install gdb lldb -y
 
+# clang-form 3.8.0
+RUN wget https://paddle-ci.cdn.bcebos.com/clang+llvm-3.8.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz && \ 
+    tar xf clang+llvm-3.8.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz && cd clang+llvm-3.8.0-x86_64-linux-gnu-ubuntu-16.04 && \
+    cp -r * /usr/local && cd .. && rm -rf clang+llvm-3.8.0-x86_64-linux-gnu-ubuntu-16.04 && rm -rf clang+llvm-3.8.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz 
+ENV PATH=/usr/local/bin:$PATH
+RUN echo "export PATH=/usr/local/bin:\${PATH}" >> ~/.bashrc
+
 # Cleanup
 RUN apt-get autoclean && apt-get clean
 

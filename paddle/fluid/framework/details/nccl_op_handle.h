@@ -288,8 +288,8 @@ class NCCLOpHandleBase : public OpHandleBase {
   std::unordered_map<int, hipEvent_t> inter_events_;
   std::unordered_map<int, hipEvent_t> exter_events_;
 #else
-  std::unordered_map<int, cudaEvent_t> inter_events_;
-  std::unordered_map<int, cudaEvent_t> exter_events_;
+  std::unordered_map<int, gpuEvent_t> inter_events_;
+  std::unordered_map<int, gpuEvent_t> exter_events_;
 #endif
 };
 

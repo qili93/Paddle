@@ -52,12 +52,13 @@ void SoftmaxCUDNNFunctor<T>::operator()(
 #ifdef PADDLE_WITH_CUDA
   PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnSoftmaxForward(
       context.cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-      CUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
+      GPUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
       X->data<T>(), CudnnDataType<T>::kZero(), cudnn_y_desc,
       Y->mutable_data<T>(context.GetPlace())));
 #else
-  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenSoftmaxForward(
-      context.cudnn_handle(), CudnnDataType<T>::kOne(), cudnn_x_desc,
+  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipdnnSoftmaxForward(
+      context.cudnn_handle(), HIPDNN_SOFTMAX_ACCURATE,
+      HIPDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
       X->data<T>(), CudnnDataType<T>::kZero(), cudnn_y_desc,
       Y->mutable_data<T>(context.GetPlace())));
 #endif
@@ -90,13 +91,14 @@ void SoftmaxGradCUDNNFunctor<T>::operator()(
 #ifdef PADDLE_WITH_CUDA
   PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnSoftmaxBackward(
       context.cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-      CUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
+      GPUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
       Y->data<T>(), cudnn_ygrad_desc, YGrad->data<T>(),
       CudnnDataType<T>::kZero(), cudnn_xgrad_desc,
       XGrad->mutable_data<T>(context.GetPlace())));
 #else
-  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenSoftmaxBackward(
-      context.cudnn_handle(), CudnnDataType<T>::kOne(), cudnn_y_desc,
+  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipdnnSoftmaxBackward(
+      context.cudnn_handle(), HIPDNN_SOFTMAX_ACCURATE,
+      HIPDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
       Y->data<T>(), cudnn_ygrad_desc, YGrad->data<T>(),
       CudnnDataType<T>::kZero(), cudnn_xgrad_desc,
       XGrad->mutable_data<T>(context.GetPlace())));
@@ -121,7 +123,7 @@ template class SoftmaxGradFunctor<platform::CUDADeviceContext, double>;
 template class SoftmaxGradFunctor<platform::CUDADeviceContext,
                                   platform::float16>;
 
-// HIP platform not support miopen double
+// HIP platform not support hipdnn double
 #ifdef PADDLE_WITH_CUDA
 template class SoftmaxCUDNNFunctor<double>;
 template class SoftmaxGradCUDNNFunctor<double>;

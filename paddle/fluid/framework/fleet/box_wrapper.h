@@ -399,7 +399,7 @@ class BoxWrapper {
 #ifdef PADDLE_WITH_HIP
       std::vector<hipStream_t*> stream_list;
 #else
-      std::vector<cudaStream_t*> stream_list;
+      std::vector<gpuStream_t*> stream_list;
 #endif
       for (int i = 0; i < platform::GetCUDADeviceCount(); ++i) {
         VLOG(3) << "before get context i[" << i << "]";
@@ -830,7 +830,7 @@ class BoxWrapper {
 #ifdef PADDLE_WITH_HIP
   static hipStream_t stream_list_[8];
 #else
-  static cudaStream_t stream_list_[8];
+  static gpuStream_t stream_list_[8];
 #endif
   static std::shared_ptr<boxps::BoxPSBase> boxps_ptr_;
   boxps::PSAgentBase* p_agent_ = nullptr;

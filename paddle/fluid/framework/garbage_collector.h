@@ -113,7 +113,7 @@ class StreamGarbageCollector : public GarbageCollector {
 #ifdef PADDLE_WITH_HIP
   hipStream_t stream() const;
 #else
-  cudaStream_t stream() const;
+  gpuStream_t stream() const;
 #endif
 
  protected:
@@ -123,7 +123,7 @@ class StreamGarbageCollector : public GarbageCollector {
 #ifdef PADDLE_WITH_HIP
   hipStream_t stream_;
 #else
-  cudaStream_t stream_;
+  gpuStream_t stream_;
 #endif
   std::unique_ptr<platform::StreamCallbackManager> callback_manager_;
 };

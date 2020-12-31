@@ -70,11 +70,11 @@ HeterPsResource::HeterPsResource(const std::vector<int>& dev_ids) {
   }
 }
 
-cudaStream_t HeterPsResource::copy_stream(int num) {
+gpuStream_t HeterPsResource::copy_stream(int num) {
   return resources_[num]->copy_stream();
 }
 
-cudaStream_t HeterPsResource::stream(int num) {
+gpuStream_t HeterPsResource::stream(int num) {
   return resources_[num]->stream();
 }
 

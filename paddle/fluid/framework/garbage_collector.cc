@@ -111,7 +111,7 @@ StreamGarbageCollector::~StreamGarbageCollector() {
 #ifdef PADDLE_WITH_HIP
 hipStream_t StreamGarbageCollector::stream() const { return stream_; }
 #else
-cudaStream_t StreamGarbageCollector::stream() const { return stream_; }
+gpuStream_t StreamGarbageCollector::stream() const { return stream_; }
 #endif
 
 void StreamGarbageCollector::Wait() const { callback_manager_->Wait(); }

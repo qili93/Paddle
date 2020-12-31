@@ -41,7 +41,7 @@ class SendOpV2CUDAKernel : public framework::OpKernel<T> {
         peer, 0,
         platform::errors::InvalidArgument(
             "The peer (%d) for send_v2 op must be non-negative.", peer));
-    cudaStream_t stream = nullptr;
+    gpuStream_t stream = nullptr;
     auto place = ctx.GetPlace();
     auto comm = platform::NCCLCommContext::Instance().Get(rid, place);
     if (ctx.Attr<bool>("use_calc_stream")) {

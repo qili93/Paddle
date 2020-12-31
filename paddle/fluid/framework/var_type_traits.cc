@@ -29,7 +29,7 @@
 #include <cudnn.h>
 #endif
 #if defined(PADDLE_WITH_HIP)
-#include <miopen/miopen.h>
+#include <hipdnn.h>
 #endif
 #include "paddle/fluid/operators/conv_cudnn_op_cache.h"
 #include "paddle/fluid/operators/cudnn_rnn_cache.h"

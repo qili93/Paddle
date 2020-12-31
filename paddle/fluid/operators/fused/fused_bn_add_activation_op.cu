@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HIP not support bn act fuse in HIPDNN
+#if defined(__NVCC__) || defined(__HIPCC__)
+
 #include <algorithm>
 #include <cfloat>
 #include <string>
@@ -105,7 +108,7 @@ class FusedBatchNormAddActKernel<platform::CUDADeviceContext, T>
     double this_factor = 1. - momentum;
     cudnnBatchNormOps_t bnOps_ = CUDNN_BATCHNORM_OPS_BN_ADD_ACTIVATION;
     platform::ScopedActivationDescriptor scope_act_desc;
-    cudnnActivationDescriptor_t activation_desc_ =
+    gpuDnnActivationDesc_t activation_desc_ =
         scope_act_desc.descriptor<T>(act_type);
     size_t workspace_size = 0;
     size_t reserve_space_size = 0;
@@ -262,7 +265,7 @@ class FusedBatchNormAddActGradKernel<platform::CUDADeviceContext, T>
     auto reserve_space_size = reserve_space->memory_size();
     cudnnBatchNormOps_t bnOps_ = CUDNN_BATCHNORM_OPS_BN_ADD_ACTIVATION;
     platform::ScopedActivationDescriptor scope_act_desc;
-    cudnnActivationDescriptor_t activation_desc_ =
+    gpuDnnActivationDesc_t activation_desc_ =
         scope_act_desc.descriptor<T>(act_type);
     // --------------- cudnn batchnorm workspace ---------------
     PADDLE_ENFORCE_CUDA_SUCCESS(
@@ -335,3 +338,4 @@ REGISTER_OP_CUDA_KERNEL(fused_bn_add_activation_grad,
                         ops::FusedBatchNormAddActGradKernel<
                             plat::CUDADeviceContext, plat::float16>);
 #endif
+#endif // __NVCC__

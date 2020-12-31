@@ -42,7 +42,7 @@ hipStream_t GetCUDAStream(paddle::platform::CUDAPlace place) {
       ->stream();
 }
 #else
-cudaStream_t GetCUDAStream(paddle::platform::CUDAPlace place) {
+gpuStream_t GetCUDAStream(paddle::platform::CUDAPlace place) {
   return reinterpret_cast<const paddle::platform::CUDADeviceContext*>(
              paddle::platform::DeviceContextPool::Instance().Get(place))
       ->stream();

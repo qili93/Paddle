@@ -88,7 +88,7 @@ __global__ void TransposeQkvKernel(const int H, const T *input, const T *bias,
 
 void TransQKVWithBias(const int batch, const int seq_len, const int head_size,
                       const int head_num, const float *input, const float *bias,
-                      float *output, cudaStream_t stream) {
+                      float *output, gpuStream_t stream) {
   // BxSx3xNxH + 3xNxH -> 3xBxNxSxH
   int scratch_size = batch * head_num * seq_len * seq_len;
   const dim3 grid(seq_len, batch, 3);

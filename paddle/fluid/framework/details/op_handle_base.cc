@@ -34,17 +34,21 @@ std::string OpHandleBase::DebugString() const {
 }
 
 OpHandleBase::~OpHandleBase() PADDLE_MAY_THROW {
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   for (auto &ev : events_) {
     if (ev.second) {
+#ifdef PADDLE_WITH_HIP
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipEventDestroy(ev.second));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventDestroy(ev.second));
+#endif
     }
   }
 #endif
 }
 
 void OpHandleBase::InitCUDA() {
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   for (auto &p : dev_ctxes_) {
     int dev_id = BOOST_GET_CONST(platform::CUDAPlace, p.first).device;
 #ifdef PADDLE_WITH_HIP

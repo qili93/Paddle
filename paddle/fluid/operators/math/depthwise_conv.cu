@@ -14,10 +14,10 @@ limitations under the License. */
 
 #include <algorithm>
 #include <vector>
-#ifdef PADDLE_WITH_CUDA
+#ifdef __NVCC__
 #include "cub/cub.cuh"
 #endif
-#ifdef PADDLE_WITH_HIP
+#ifdef __HIPCC__
 #include <hipcub/hipcub.hpp>
 #endif
 #include "paddle/fluid/operators/math/depthwise_conv.h"

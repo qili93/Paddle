@@ -55,8 +55,7 @@ CUDA_ATOMIC_WRAPPER(Add, int64_t) {
       static_cast<unsigned long long int>(val));            // NOLINT
 }
 
-#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 600) || \
-    defined(__HIP_DEVICE_COMPILE__)
+#if defined(__HIP_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 600)
 USE_CUDA_ATOMIC(Add, double);
 #else
 CUDA_ATOMIC_WRAPPER(Add, double) {
@@ -155,8 +154,7 @@ USE_CUDA_ATOMIC(Max, int);
 USE_CUDA_ATOMIC(Max, unsigned int);
 // CUDA API uses unsigned long long int, we cannot use uint64_t here.
 // It because unsigned long long int is not necessarily uint64_t
-#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350) || \
-    defined(__HIP_DEVICE_COMPILE__)
+#if defined(__HIP_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350)
 USE_CUDA_ATOMIC(Max, unsigned long long int);  // NOLINT
 #else
 CUDA_ATOMIC_WRAPPER(Max, unsigned long long int) {  // NOLINT
@@ -228,8 +226,7 @@ USE_CUDA_ATOMIC(Min, int);
 USE_CUDA_ATOMIC(Min, unsigned int);
 // CUDA API uses unsigned long long int, we cannot use uint64_t here.
 // It because unsigned long long int is not necessarily uint64_t
-#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350) || \
-    defined(__HIP_DEVICE_COMPILE__)
+#if defined(__HIP_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350)
 USE_CUDA_ATOMIC(Min, unsigned long long int);  // NOLINT
 #else
 CUDA_ATOMIC_WRAPPER(Min, unsigned long long int) {  // NOLINT

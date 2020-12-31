@@ -430,5 +430,5 @@ inline BlasT<DeviceContext, T> GetBlas(const DeviceContext& dev_ctx) {
 #include "paddle/fluid/operators/math/blas_impl.cu.h"
 #endif
 #ifdef PADDLE_WITH_HIP
-#include "paddle/fluid/operators/math/blas_impl_hip.cu.h"
+#include "paddle/fluid/operators/math/blas_impl.hip.h"
 #endif

@@ -30,6 +30,7 @@ limitations under the License. */
 #include <hip/hip_fp16.h>
 #include <hip/hip_runtime.h>
 #include <hipcub/hipcub.hpp>
+namespace cub = hipcub;
 #endif
 #endif
 

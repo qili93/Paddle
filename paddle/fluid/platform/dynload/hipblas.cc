@@ -12,28 +12,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#include "paddle/fluid/platform/dynload/rocblas.h"
+#include "paddle/fluid/platform/dynload/hipblas.h"
 
 namespace paddle {
 namespace platform {
 namespace dynload {
-std::once_flag rocblas_dso_flag;
-void *rocblas_dso_handle = nullptr;
+std::once_flag hipblas_dso_flag;
+void *hipblas_dso_handle = nullptr;
 
 #define DEFINE_WRAP(__name) DynLoad__##__name __name
 
-ROCBLAS_BLAS_ROUTINE_EACH(DEFINE_WRAP);
+HIPBLAS_BLAS_ROUTINE_EACH(DEFINE_WRAP);
 
-#ifdef ROCBLAS_BLAS_ROUTINE_EACH_R2
-ROCBLAS_BLAS_ROUTINE_EACH_R2(DEFINE_WRAP);
+#ifdef HIPBLAS_BLAS_ROUTINE_EACH_R2
+HIPBLAS_BLAS_ROUTINE_EACH_R2(DEFINE_WRAP);
 #endif
 
-#ifdef ROCBLAS_BLAS_ROUTINE_EACH_R3
-ROCBLAS_BLAS_ROUTINE_EACH_R3(DEFINE_WRAP);
+#ifdef HIPBLAS_BLAS_ROUTINE_EACH_R3
+HIPBLAS_BLAS_ROUTINE_EACH_R3(DEFINE_WRAP);
 #endif
 
-#ifdef ROCBLAS_BLAS_ROUTINE_EACH_R4
-ROCBLAS_BLAS_ROUTINE_EACH_R4(DEFINE_WRAP);
+#ifdef HIPBLAS_BLAS_ROUTINE_EACH_R4
+HIPBLAS_BLAS_ROUTINE_EACH_R4(DEFINE_WRAP);
 #endif
 }  // namespace dynload
 }  // namespace platform

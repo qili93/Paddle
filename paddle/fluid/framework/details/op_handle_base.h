@@ -155,7 +155,7 @@ class OpHandleBase {
   bool skip_running_ = false;
 
 #ifdef PADDLE_WITH_CUDA
-  std::unordered_map<int, cudaEvent_t> events_;
+  std::unordered_map<int, gpuEvent_t> events_;
 #endif
 
 #ifdef PADDLE_WITH_HIP

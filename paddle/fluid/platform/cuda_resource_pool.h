@@ -33,8 +33,8 @@ namespace paddle {
 namespace platform {
 
 #ifdef PADDLE_WITH_CUDA
-using CudaStreamObject = std::remove_pointer<cudaStream_t>::type;
-using CudaEventObject = std::remove_pointer<cudaEvent_t>::type;
+using CudaStreamObject = std::remove_pointer<gpuStream_t>::type;
+using CudaEventObject = std::remove_pointer<gpuEvent_t>::type;
 #endif
 #ifdef PADDLE_WITH_HIP
 using CudaStreamObject = std::remove_pointer<hipStream_t>::type;

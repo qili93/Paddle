@@ -36,16 +36,16 @@ class ConvSearchCache {
     return instance;
   }
 #ifdef PADDLE_WITH_HIP
-  AlgorithmsCache<miopenConvFwdAlgorithm_t>* GetForward() {
+  AlgorithmsCache<hipdnnConvolutionFwdAlgo_t>* GetForward() {
     return &forward_cache_;
   }
-  AlgorithmsCache<miopenConvBwdDataAlgorithm_t>* GetBackwardData() {
+  AlgorithmsCache<hipdnnConvolutionBwdDataAlgo_t>* GetBackwardData() {
     return &backward_data_cache_;
   }
-  AlgorithmsCache<miopenConvBwdWeightsAlgorithm_t>* GetBackwardFilter() {
+  AlgorithmsCache<hipdnnConvolutionBwdFilterAlgo_t>* GetBackwardFilter() {
     return &backward_filter_cache_;
   }
-  AlgorithmsCache<miopenConvFwdAlgorithm_t>* GetConvFusion() {
+  AlgorithmsCache<hipdnnConvolutionFwdAlgo_t>* GetConvFusion() {
     return &fusion_forward_cache_;
   }
 #else
@@ -69,16 +69,16 @@ class ConvSearchCache {
   ConvSearchCache(const ConvSearchCache&) {}
   ConvSearchCache& operator=(const ConvSearchCache&) {}
 
-#ifdef PADDLE_WITH_HIP
+#ifdef PADDLE_WITH_CUDA
   AlgorithmsCache<cudnnConvolutionFwdAlgo_t> forward_cache_;
   AlgorithmsCache<cudnnConvolutionBwdDataAlgo_t> backward_data_cache_;
   AlgorithmsCache<cudnnConvolutionBwdFilterAlgo_t> backward_filter_cache_;
   AlgorithmsCache<cudnnConvolutionFwdAlgo_t> fusion_forward_cache_;
 #else
-  AlgorithmsCache<cudnnConvolutionFwdAlgo_t> forward_cache_;
-  AlgorithmsCache<cudnnConvolutionBwdDataAlgo_t> backward_data_cache_;
-  AlgorithmsCache<cudnnConvolutionBwdFilterAlgo_t> backward_filter_cache_;
-  AlgorithmsCache<cudnnConvolutionFwdAlgo_t> fusion_forward_cache_;
+  AlgorithmsCache<hipdnnConvolutionFwdAlgo_t> forward_cache_;
+  AlgorithmsCache<hipdnnConvolutionBwdDataAlgo_t> backward_data_cache_;
+  AlgorithmsCache<hipdnnConvolutionBwdFilterAlgo_t> backward_filter_cache_;
+  AlgorithmsCache<hipdnnConvolutionFwdAlgo_t> fusion_forward_cache_;
 #endif
 };
 

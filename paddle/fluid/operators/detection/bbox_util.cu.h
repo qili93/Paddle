@@ -20,7 +20,7 @@ limitations under the License. */
 #include "cub/cub.cuh"
 #endif
 #ifdef __HIPCC__
-#include "hipcub/hipcub.hpp"
+#include <hipcub/hipcub.hpp>
 namespace cub = hipcub;
 #endif
 #include "paddle/fluid/operators/gather.cu.h"

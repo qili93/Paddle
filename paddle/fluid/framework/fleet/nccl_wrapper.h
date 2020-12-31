@@ -57,7 +57,7 @@ class NCCLInfo {
 #ifdef PADDLE_WITH_RCCL
   hipStream_t stream_;
 #else
-  cudaStream_t stream_;
+  gpuStream_t stream_;
 #endif
 #endif
 };

@@ -454,8 +454,8 @@ class HeterBoxWorker : public HogwildWorker {
     new (&program_) ProgramDesc(main_program);
   }
   virtual void ProduceTasks() override;  // NOLINT
-  virtual void SetStream(const cudaStream_t stream) { copy_stream_ = stream; }
-  virtual void SetEvent(const cudaEvent_t event) { event_ = event; }
+  virtual void SetStream(const gpuStream_t stream) { copy_stream_ = stream; }
+  virtual void SetEvent(const gpuEvent_t event) { event_ = event; }
   virtual void TrainFilesWithProfiler() {}
   void ResetStat();
 
@@ -517,8 +517,8 @@ class HeterBoxWorker : public HogwildWorker {
   std::unordered_map<uint64_t, std::unordered_set<uint64_t>> feasign_set_;
   paddle::framework::Channel<std::shared_ptr<HeterTask>> pull_queue_;
   paddle::framework::Channel<std::shared_ptr<HeterTask>> push_queue_;
-  cudaEvent_t event_;
-  cudaStream_t copy_stream_;
+  gpuEvent_t event_;
+  gpuStream_t copy_stream_;
   int batch_cnt_{0};
   std::atomic<int> done_cnt_{0};
 
@@ -554,8 +554,8 @@ class PSGPUWorker : public HogwildWorker {
     new (&program_) ProgramDesc(main_program);
   }
   virtual void ProduceTasks() override;  // NOLINT
-  virtual void SetStream(const cudaStream_t stream) { copy_stream_ = stream; }
-  virtual void SetEvent(const cudaEvent_t event) { event_ = event; }
+  virtual void SetStream(const gpuStream_t stream) { copy_stream_ = stream; }
+  virtual void SetEvent(const gpuEvent_t event) { event_ = event; }
   virtual void TrainFilesWithProfiler() {}
   void ResetStat();
 
@@ -614,8 +614,8 @@ class PSGPUWorker : public HogwildWorker {
   std::unordered_map<uint64_t, std::unordered_set<uint64_t>> feasign_set_;
   paddle::framework::Channel<std::shared_ptr<HeterTask>> pull_queue_;
   paddle::framework::Channel<std::shared_ptr<HeterTask>> push_queue_;
-  cudaEvent_t event_;
-  cudaStream_t copy_stream_;
+  gpuEvent_t event_;
+  gpuStream_t copy_stream_;
   int batch_cnt_{0};
   std::atomic<int> done_cnt_{0};
 

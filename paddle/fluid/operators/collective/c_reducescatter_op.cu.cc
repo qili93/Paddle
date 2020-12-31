@@ -49,7 +49,7 @@ class CReduceScatterOpCUDAKernel : public framework::OpKernel<T> {
     T* recv_buff = out->data<T>();
     int dtype = platform::ToNCCLDataType(in->type());
 
-    cudaStream_t stream = nullptr;
+    gpuStream_t stream = nullptr;
     if (ctx.Attr<bool>("use_calc_stream")) {
       auto dev_ctx = platform::DeviceContextPool::Instance().Get(place);
       stream = static_cast<platform::CUDADeviceContext*>(dev_ctx)->stream();

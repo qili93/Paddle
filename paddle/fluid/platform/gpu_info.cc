@@ -292,7 +292,7 @@ size_t GpuMaxChunkSize() {
 }
 
 void GpuMemcpyAsync(void *dst, const void *src, size_t count,
-                    enum cudaMemcpyKind kind, cudaStream_t stream) {
+                    enum cudaMemcpyKind kind, gpuStream_t stream) {
   PADDLE_ENFORCE_CUDA_SUCCESS(cudaMemcpyAsync(dst, src, count, kind, stream));
 }
 
@@ -302,7 +302,7 @@ void GpuMemcpySync(void *dst, const void *src, size_t count,
 }
 
 void GpuMemcpyPeerAsync(void *dst, int dst_device, const void *src,
-                        int src_device, size_t count, cudaStream_t stream) {
+                        int src_device, size_t count, gpuStream_t stream) {
   PADDLE_ENFORCE_CUDA_SUCCESS(
       cudaMemcpyPeerAsync(dst, dst_device, src, src_device, count, stream));
 }
@@ -313,11 +313,11 @@ void GpuMemcpyPeerSync(void *dst, int dst_device, const void *src,
       cudaMemcpyPeer(dst, dst_device, src, src_device, count));
 }
 
-void GpuMemsetAsync(void *dst, int value, size_t count, cudaStream_t stream) {
+void GpuMemsetAsync(void *dst, int value, size_t count, gpuStream_t stream) {
   PADDLE_ENFORCE_CUDA_SUCCESS(cudaMemsetAsync(dst, value, count, stream));
 }
 
-void GpuStreamSync(cudaStream_t stream) {
+void GpuStreamSync(gpuStream_t stream) {
   PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
 }
 

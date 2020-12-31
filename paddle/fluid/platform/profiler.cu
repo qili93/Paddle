@@ -42,7 +42,7 @@ void DummyKernelAndEvent() {
   for (int i = 0; i < 5; i++) {
     ForEachDevice([](int d) {
       platform::SetDeviceId(d);
-      cudaStream_t stream;
+      gpuStream_t stream;
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamCreate(&stream));
       Mark("_cuda_startup_");
       int *ptr;

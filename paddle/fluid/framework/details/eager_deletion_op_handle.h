@@ -83,7 +83,7 @@ class EagerDeletionOpHandle : public OpHandleBase {
   std::vector<Variable *> vars_;
 #ifdef PADDLE_WITH_CUDA
   platform::CUDADeviceContext *dev_ctx_{nullptr};
-  cudaEvent_t event_{nullptr};
+  gpuEvent_t event_{nullptr};
 #endif
 #ifdef PADDLE_WITH_HIP
   platform::CUDADeviceContext *dev_ctx_{nullptr};

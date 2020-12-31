@@ -28,7 +28,7 @@ std::shared_ptr<BoxWrapper> BoxWrapper::s_instance_ = nullptr;
 #ifdef PADDLE_WITH_HIP
 hipStream_t BoxWrapper::stream_list_[8];
 #else
-cudaStream_t BoxWrapper::stream_list_[8];
+gpuStream_t BoxWrapper::stream_list_[8];
 #endif
 std::shared_ptr<boxps::BoxPSBase> BoxWrapper::boxps_ptr_ = nullptr;
 AfsManager* BoxWrapper::afs_manager = nullptr;

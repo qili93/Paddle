@@ -35,8 +35,8 @@ limitations under the License. */
 #endif
 
 #ifdef PADDLE_WITH_HIP
-#include "paddle/fluid/platform/dynload/miopen.h"
-#include "paddle/fluid/platform/dynload/rocblas.h"
+#include "paddle/fluid/platform/dynload/hipdnn.h"
+#include "paddle/fluid/platform/dynload/hipblas.h"
 #if !defined(__APPLE__) && defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/platform/dynload/rccl.h"
 #endif
@@ -64,7 +64,7 @@ limitations under the License. */
 typedef cudnnHandle_t gpudnnHandle_t;
 #endif
 #ifdef PADDLE_WITH_HIP
-typedef miopenHandle_t gpudnnHandle_t;
+typedef hipdnnHandle_t gpudnnHandle_t;
 #endif
 
 namespace Eigen {
@@ -79,7 +79,7 @@ struct GpuDevice;
 namespace paddle {
 namespace platform {
 
-#ifdef PADDLE_WITH_CUDA
+#if (defined PADDLE_WITH_CUDA || defined PADDLE_WITH_HIP)
 /*Set the value of the global variable allow_tf32_cublas*/
 void SetAllowTF32Cublas(bool active);
 /*Get the global variable allow_tf32_cublas value*/
@@ -259,9 +259,9 @@ class CUDAContext {
       PADDLE_RETRY_CUDA_SUCCESS(
           dynload::cudnnSetStream(cudnn_handle_, RawStream()));
 #elif defined(PADDLE_WITH_HIP)
-      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenCreate(&cudnn_handle_));
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::hipdnnCreate(&cudnn_handle_));
       PADDLE_ENFORCE_CUDA_SUCCESS(
-          dynload::miopenSetStream(cudnn_handle_, RawStream()));
+          dynload::hipdnnSetStream(cudnn_handle_, RawStream()));
 #endif
     } else {
       cudnn_handle_ = nullptr;
@@ -281,7 +281,7 @@ class CUDAContext {
 #ifdef PADDLE_WITH_CUDA
       PADDLE_ENFORCE_CUDA_SUCCESS(dynload::cudnnDestroy(cudnn_handle_));
 #elif defined(PADDLE_WITH_HIP)
-      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenDestroy(cudnn_handle_));
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::hipdnnDestroy(cudnn_handle_));
 #endif
     }
     cudnn_handle_ = nullptr;

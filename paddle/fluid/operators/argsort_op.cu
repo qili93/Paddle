@@ -28,6 +28,16 @@ limitations under the License. */
 #include "paddle/fluid/platform/cuda_device_function.h"
 #include "paddle/fluid/platform/cuda_primitives.h"
 
+#ifdef __HIPCC__
+namespace rocprim {
+namespace detail {
+template<>
+struct radix_key_codec_base<paddle::platform::float16> 
+     : radix_key_codec_integral<paddle::platform::float16, uint16_t> {};
+} // namespace detail
+} // namespace rocprim
+namespace cub = hipcub;
+#else
 // set cub base traits in order to handle float16
 namespace cub {
 template <>
@@ -35,6 +45,7 @@ struct NumericTraits<paddle::platform::float16>
     : BaseTraits<FLOATING_POINT, true, false, uint16_t,
                  paddle::platform::float16> {};
 }  // namespace cub
+#endif
 
 namespace paddle {
 namespace operators {
@@ -144,7 +155,11 @@ void ArgFullSort(const platform::CUDADeviceContext& ctx, const Tensor* input,
                               cub::CountingInputIterator<IndType>>
       segment_offsets_t(counting_iter, SegmentOffsetIter(num_cols));
 
+#ifdef __HIPCC__
+  hipError_t err;
+#else
   cudaError_t err;
+#endif
   if (descending) {
     err = cub::DeviceSegmentedRadixSort::SortPairsDescending(
         nullptr, temp_storage_bytes, inp, sorted_out_ptr,

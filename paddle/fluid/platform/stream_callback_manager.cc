@@ -23,7 +23,7 @@ namespace platform {
 #if CUDA_VERSION >= 10000
 static void CUDART_CB StreamCallbackFunc(void *user_data)
 #else
-static void CUDART_CB StreamCallbackFunc(cudaStream_t stream,
+static void CUDART_CB StreamCallbackFunc(gpuStream_t stream,
                                          cudaError_t status, void *user_data)
 #endif
 {
@@ -32,7 +32,7 @@ static void CUDART_CB StreamCallbackFunc(cudaStream_t stream,
   (*func)();
 }
 
-StreamCallbackManager::StreamCallbackManager(const cudaStream_t stream)
+StreamCallbackManager::StreamCallbackManager(const gpuStream_t stream)
     : stream_(stream), thread_pool_(1) {}
 
 void StreamCallbackManager::AddCallback(std::function<void()> callback) const {

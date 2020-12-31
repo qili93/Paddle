@@ -45,7 +45,7 @@ class RecvOpV2CUDAKernel : public framework::OpKernel<T> {
     framework::proto::VarType::Type type =
         framework::proto::VarType::Type(data_type);
 
-    cudaStream_t stream = nullptr;
+    gpuStream_t stream = nullptr;
     auto place = ctx.GetPlace();
     auto comm = platform::NCCLCommContext::Instance().Get(rid, place);
     if (ctx.Attr<bool>("use_calc_stream")) {

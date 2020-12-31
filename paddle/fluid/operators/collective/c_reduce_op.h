@@ -129,7 +129,7 @@ class CReduceOpCUDAKernel : public framework::OpKernel<T> {
     int root = ctx.Attr<int>("root_id");
     auto comm = platform::NCCLCommContext::Instance().Get(rid, place);
 
-    cudaStream_t stream = nullptr;
+    gpuStream_t stream = nullptr;
     if (ctx.Attr<bool>("use_calc_stream")) {
       auto dev_ctx = platform::DeviceContextPool::Instance().Get(place);
       stream = static_cast<platform::CUDADeviceContext*>(dev_ctx)->stream();

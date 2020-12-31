@@ -82,7 +82,7 @@ limitations under the License. */
 #include "paddle/fluid/pybind/ps_gpu_wrapper_py.h"
 #include "paddle/fluid/pybind/pybind_boost_headers.h"
 
-#ifdef PADDLE_WITH_NCCL
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/pybind/nccl_wrapper_py.h"
 #endif
 #include "paddle/fluid/framework/data_type.h"
@@ -91,11 +91,13 @@ limitations under the License. */
 #include "paddle/fluid/pybind/reader_py.h"
 #include "paddle/fluid/pybind/tensor_py.h"
 #include "paddle/fluid/string/to_string.h"
-#ifdef PADDLE_WITH_CUDA
-#ifdef PADDLE_WITH_NCCL
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/operators/nccl/nccl_gpu_common.h"
 #endif
+#ifndef PADDLE_WITH_HIP
 #include "paddle/fluid/platform/cuda_profiler.h"
+#endif
 #include "paddle/fluid/platform/gpu_info.h"
 #endif
 
@@ -124,7 +126,7 @@ PYBIND11_MAKE_OPAQUE(paddle::framework::FetchType);
 namespace paddle {
 namespace pybind {
 bool IsCompiledWithCUDA() {
-#ifndef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   return false;
 #else
   return true;
@@ -374,7 +376,7 @@ PYBIND11_MODULE(core_noavx, m) {
 
   m.def("set_num_threads", &platform::SetNumThreads);
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   m.def("cudnn_version", &platform::CudnnVersion);
 #endif
 
@@ -388,7 +390,7 @@ PYBIND11_MODULE(core_noavx, m) {
     if (dl.ctx.device_type == kDLCPU) {
       paddle::framework::TensorFromDLPack(dl, &tensor);
     }
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
     if (dl.ctx.device_type == kDLGPU) {
       paddle::framework::TensorFromDLPack(dl, &tensor);
     }
@@ -1037,7 +1039,7 @@ PYBIND11_MODULE(core_noavx, m) {
       .def("height", &SelectedRows::height)
       .def("set_rows",
            [](SelectedRows &self, std::vector<int64_t> rows) {
-#ifndef PADDLE_WITH_CUDA
+#if !defined(PADDLE_WITH_CUDA) && !defined(PADDLE_WITH_HIP)
              self.set_rows(rows);
 #else
         Vector<int64_t> new_rows(rows);
@@ -1330,7 +1332,7 @@ All parameter, weight, gradient are variables in Paddle.
       .def_static("create",
                   [](paddle::platform::CUDAPlace& place)
                       -> paddle::platform::DeviceContext* {
-#ifndef PADDLE_WITH_CUDA
+#if !defined(PADDLE_WITH_CUDA) && !defined(PADDLE_WITH_HIP)
              PADDLE_THROW(
                  platform::errors::PermissionDenied(
                  "Cannot use CUDAPlace in CPU only version, "
@@ -1342,7 +1344,7 @@ All parameter, weight, gradient are variables in Paddle.
           .def_static("create",
                 [](paddle::platform::CUDAPinnedPlace& place)
                         -> paddle::platform::DeviceContext* {
-#ifndef PADDLE_WITH_CUDA
+#if !defined(PADDLE_WITH_CUDA) && !defined(PADDLE_WITH_HIP)
              PADDLE_THROW(
                  platform::errors::PermissionDenied(
                  "Cannot use CUDAPinnedPlace in CPU only version, "
@@ -1352,7 +1354,7 @@ All parameter, weight, gradient are variables in Paddle.
 #endif
                 });;
 // clang-format on
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   py::class_<platform::Communicator>(m, "Communicator").def(py::init<>());
 #endif
   py::class_<platform::CUDAPlace>(m, "CUDAPlace", R"DOC(
@@ -1381,7 +1383,7 @@ All parameter, weight, gradient are variables in Paddle.
         )DOC")
       .def("__init__",
            [](platform::CUDAPlace &self, int dev_id) {
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
              if (UNLIKELY(dev_id < 0)) {
                LOG(ERROR) << string::Sprintf(
                    "Invalid CUDAPlace(%d), device id must be 0 or "
@@ -1419,7 +1421,7 @@ All parameter, weight, gradient are variables in Paddle.
              std::exit(-1);
 #endif
            })
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
       .def("get_device_id",
            [](const platform::CUDAPlace &self) { return self.GetDeviceId(); })
       .def("_type", &PlaceIndex<platform::CUDAPlace>)
@@ -1535,7 +1537,7 @@ All parameter, weight, gradient are variables in Paddle.
         )DOC")
       .def("__init__",
            [](platform::CUDAPinnedPlace &self) {
-#ifndef PADDLE_WITH_CUDA
+#if !defined(PADDLE_WITH_CUDA) && !defined(PADDLE_WITH_HIP)
              PADDLE_THROW(platform::errors::PermissionDenied(
                  "Cannot use CUDAPinnedPlace in CPU only version, "
                  "Please recompile or reinstall Paddle with CUDA support."));
@@ -1766,7 +1768,7 @@ All parameter, weight, gradient are variables in Paddle.
         py::arg("cmd"), py::arg("time_out") = 0, py::arg("sleep_inter") = 0,
         py::arg("redirect_stderr") = false);
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   m.def("is_float16_supported", [](const platform::CUDAPlace &place) -> bool {
     // Only GPUs with Compute Capability >= 53 support float16
     return platform::GetCUDAComputeCapability(place.device) >= 53;
@@ -1940,10 +1942,10 @@ All parameter, weight, gradient are variables in Paddle.
            py::return_value_policy::take_ownership);
 
   m.def("op_support_gpu", OpSupportGPU);
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   m.def("get_cuda_device_count", platform::GetCUDADeviceCount);
 
-#ifndef _WIN32
+#if !defined(PADDLE_WITH_HIP) && !defined(_WIN32)
   m.def("nvprof_init", platform::CudaProfilerInit);
   m.def("nvprof_start", platform::CudaProfilerStart);
   m.def("nvprof_stop", platform::CudaProfilerStop);
@@ -1984,7 +1986,7 @@ All parameter, weight, gradient are variables in Paddle.
 
   m.def("size_of_dtype", framework::SizeOfType);
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
   m.def("set_cublas_switch", platform::SetAllowTF32Cublas);
   m.def("get_cublas_switch", platform::AllowTF32Cublas);
 #endif  // PADDLE_WITH_CUDA
@@ -2822,7 +2824,7 @@ All parameter, weight, gradient are variables in Paddle.
 #ifdef PADDLE_WITH_BOX_PS
   BindBoxWrapper(&m);
 #endif
-#ifdef PADDLE_WITH_NCCL
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   BindNCCLWrapper(&m);
 #endif
 #ifdef PADDLE_WITH_GLOO
