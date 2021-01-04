@@ -165,7 +165,7 @@ class ParallelExecutorPassBuilder : public ir::PassBuilder {
                         "fuse_relu_depthwise_conv_pass");
     AppendPassWithCheck(strategy_.fuse_bn_act_ops_, "fuse_bn_act_pass");
     AppendPassWithCheck(strategy_.fuse_bn_add_act_ops_, "fuse_bn_add_act_pass");
-#if defined(PADDLE_WITH_CUDA) && !defined(_WIN32) && !defined(__APPLE__)
+#if (defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)) && !defined(_WIN32) && !defined(__APPLE__)
     AppendPassWithCheck(strategy_.enable_auto_fusion_, "fusion_group_pass");
 #else
     LOG(WARNING) << "fusion_group is not enabled for Windows/MacOS now, and "

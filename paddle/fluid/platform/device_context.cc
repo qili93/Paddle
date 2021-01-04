@@ -321,8 +321,11 @@ CUDAContext::CUDAContext(const CUDAPlace& place,
   CUDADeviceGuard guard(place_.device);
   stream_.reset(new stream::CUDAStream(place, priority));
   InitEigenContext();
+  std::cout << "InitEigenContext finish..." << std::endl;
   InitCuBlasContext();
+  std::cout << "InitCuBlasContext finish..." << std::endl;
   InitCuDNNContext();
+  std::cout << "InitCuDNNContext finish..." << std::endl;
 #ifdef PADDLE_WITH_CUDA
   InitCuSolverContext();
 #endif
@@ -348,6 +351,14 @@ CUDADeviceContext::CUDADeviceContext(CUDAPlace place) : place_(place) {
   driver_version_ = GetCUDADriverVersion(place_.device);
   runtime_version_ = GetCUDARuntimeVersion(place_.device);
 
+  std::cout << "compute_capability_=" << compute_capability_ << std::endl;
+  std::cout << "multi_process_=" << multi_process_ << std::endl;
+  std::cout << "max_threads_per_mp_=" << max_threads_per_mp_ << std::endl;
+  // std::cout << "max_grid_dim_size_=" << max_grid_dim_size_ << std::endl;
+  std::cout << "max_threads_per_block_=" << max_threads_per_block_ << std::endl;
+  std::cout << "driver_version_=" << driver_version_ << std::endl;
+  std::cout << "runtime_version_=" << runtime_version_ << std::endl;
+
   LOG_FIRST_N(WARNING, 1) << "Please NOTE: device: " << place_.device
                           << ", GPU Compute Capability: "
                           << compute_capability_ / 10 << "."
@@ -357,8 +368,16 @@ CUDADeviceContext::CUDADeviceContext(CUDAPlace place) : place_(place) {
                           << ", Runtime API Version: "
                           << runtime_version_ / 1000 << "."
                           << (runtime_version_ % 100) / 10;
-#ifdef PADDLE_WITH_CUDA
+
+  std::cout << "runtime_version_=" << runtime_version_ << std::endl;
+
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#ifdef PADDLE_WITH_HIP
+  size_t cudnn_dso_ver = dynload::hipdnnGetVersion();
+#else
   size_t cudnn_dso_ver = dynload::cudnnGetVersion();
+#endif
+  std::cout << "cudnn_dso_ver=" << cudnn_dso_ver << std::endl;
   LOG_FIRST_N(WARNING, 1) << "device: " << place_.device
                           << ", cuDNN Version: " << cudnn_dso_ver / 1000 << "."
                           << (cudnn_dso_ver % 1000) / 100 << ".";
@@ -367,8 +386,16 @@ CUDADeviceContext::CUDADeviceContext(CUDAPlace place) : place_(place) {
     // Check CUDA/CUDNN version compatiblity
     auto local_cuda_version =
         (driver_version_ / 1000) * 10 + (driver_version_ % 100) / 10;
+    std::cout << "local_cuda_version=" << local_cuda_version << std::endl;
+#ifdef PADDLE_WITH_HIP
+    std::cout << "HIP_VERSION=" << HIP_VERSION << std::endl;
+    auto compile_cuda_version =
+        (HIP_VERSION / 100) * 10 + (HIP_VERSION % 10);
+#else
     auto compile_cuda_version =
         (CUDA_VERSION / 1000) * 10 + (CUDA_VERSION % 100) / 10;
+#endif
+    std::cout << "compile_cuda_version=" << compile_cuda_version << std::endl;
     if (local_cuda_version < compile_cuda_version) {
       LOG_FIRST_N(WARNING, 1)
           << "WARNING: device: " << place_.device

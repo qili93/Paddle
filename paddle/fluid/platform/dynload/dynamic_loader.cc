@@ -49,7 +49,7 @@ DEFINE_string(op_dir, "", "Specify path for loading user-defined op library.");
 #ifdef PADDLE_WITH_HIP
 
 DEFINE_string(rocm_dir, "",
-              "Specify path for loading rocm library, such as libhipblas, "
+              "Specify path for loading rocm library, such as librocblas, "
               "libhipdnn, libhipsparse. For instance, /opt/rocm/lib. "
               "If default, dlopen will search rocm from LD_LIBRARY_PATH");
 
@@ -260,7 +260,7 @@ void* GetCublasDsoHandle() {
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, win_cublas_lib, true,
                                     {cuda_lib_path});
 #elif defined(PADDLE_WITH_HIP)
-  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhipblas.so");
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "librocblas.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcublas.so");
 #endif

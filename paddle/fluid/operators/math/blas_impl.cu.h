@@ -134,7 +134,7 @@ struct CUBlas<double> {
 
   template <typename... ARGS>
   static void VCOPY(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cublasDcopy(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::curocblas_dcopy(args...));
   }
 
   template <typename... ARGS>

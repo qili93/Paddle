@@ -36,7 +36,7 @@ limitations under the License. */
 
 #ifdef PADDLE_WITH_HIP
 #include "paddle/fluid/platform/dynload/hipdnn.h"
-#include "paddle/fluid/platform/dynload/hipblas.h"
+#include "paddle/fluid/platform/dynload/rocblas.h"
 #if !defined(__APPLE__) && defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/platform/dynload/rccl.h"
 #endif
@@ -261,7 +261,9 @@ class CUDAContext {
 
 #ifdef PADDLE_WITH_HIP
   void InitCuBlasContext() {
+    std::cout << "InitCuBlasContext start ..." << std::endl;
     cublas_handle_.reset(new CublasHandleHolder(RawStream()));
+    std::cout << "InitCuBlasContext finish ..." << std::endl;
   }
 #endif
 

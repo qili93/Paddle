@@ -15,7 +15,7 @@
 #pragma once
 
 #include "paddle/fluid/operators/math/math_function.h"
-#include "paddle/fluid/platform/dynload/hipblas.h"
+#include "paddle/fluid/platform/dynload/rocblas.h"
 #include "paddle/fluid/platform/gpu_info.h"
 
 DECLARE_bool(enable_cublas_tensor_op_math);
@@ -31,33 +31,33 @@ template <>
 struct CUBlas<float> {
   template <typename... ARGS>
   static void GEMM(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasSgemm(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_sgemm(args...));
   }
 
   template <typename... ARGS>
   static void AXPY(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasSaxpy(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_saxpy(args...));
   }
 
   template <typename... ARGS>
   static void SCAL(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasSscal(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_sscal(args...));
   }
 
   template <typename... ARGS>
   static void VCOPY(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasScopy(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_scopy(args...));
   }
 
   template <typename... ARGS>
   static void GEMV(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasSgemv(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_sgemv(args...));
   }
 
   template <typename... ARGS>
   static void GEMM_STRIDED_BATCH(ARGS... args) {
     PADDLE_ENFORCE_CUDA_SUCCESS(
-        platform::dynload::hipblasSgemmStridedBatched(args...));
+        platform::dynload::rocblas_sgemm_strided_batched(args...));
   }
 
   // HIP not supportted, refer to the doc here:
@@ -70,7 +70,7 @@ struct CUBlas<float> {
 
   template <typename... ARGS>
   static void TRSM(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasStrsm(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_strsm(args...));
   }
 
   template <typename... ARGS>
@@ -96,33 +96,33 @@ template <>
 struct CUBlas<double> {
   template <typename... ARGS>
   static void GEMM(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDgemm(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_dgemm(args...));
   }
 
   template <typename... ARGS>
   static void AXPY(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDaxpy(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_daxpy(args...));
   }
 
   template <typename... ARGS>
   static void SCAL(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDscal(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_dscal(args...));
   }
 
   template <typename... ARGS>
   static void VCOPY(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDcopy(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_dcopy(args...));
   }
 
   template <typename... ARGS>
   static void GEMV(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDgemv(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_dgemv(args...));
   }
 
   template <typename... ARGS>
   static void GEMM_STRIDED_BATCH(ARGS... args) {
     PADDLE_ENFORCE_CUDA_SUCCESS(
-        platform::dynload::hipblasDgemmStridedBatched(args...));
+        platform::dynload::rocblas_dgemm_strided_batched(args...));
   }
 
   template <typename... ARGS>
@@ -133,7 +133,7 @@ struct CUBlas<double> {
 
   template <typename... ARGS>
   static void TRSM(ARGS... args) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasDtrsm(args...));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_dtrsm(args...));
   }
 
   template <typename... ARGS>
@@ -159,23 +159,23 @@ template <>
 struct CUBlas<platform::float16> {
   using float16 = platform::float16;
 
-  static void GEMM(hipblasHandle_t handle, hipblasOperation_t transa,
-                   hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM(rocblas_handle handle, rocblas_operation transa,
+                   rocblas_operation transb, int m, int n, int k,
                    const float16 *alpha, const float16 *A, int lda,
                    const float16 *B, int ldb, const float16 *beta, float16 *C,
                    int ldc) {
     PADDLE_ENFORCE_CUDA_SUCCESS(
-        platform::dynload::hipblasHgemm(handle, transa, transb, m, n, k,
-                                       reinterpret_cast<const hipblasHalf*>(alpha),
-                                       reinterpret_cast<const hipblasHalf*>(A), lda,
-                                       reinterpret_cast<const hipblasHalf*>(B), ldb,
-                                       reinterpret_cast<const hipblasHalf*>(beta),
-                                       reinterpret_cast<hipblasHalf*>(C), ldc));
+        platform::dynload::rocblas_hgemm(handle, transa, transb, m, n, k,
+                                       reinterpret_cast<const rocblas_half*>(alpha),
+                                       reinterpret_cast<const rocblas_half*>(A), lda,
+                                       reinterpret_cast<const rocblas_half*>(B), ldb,
+                                       reinterpret_cast<const rocblas_half*>(beta),
+                                       reinterpret_cast<rocblas_half*>(C), ldc));
   }
 
-  static void GEMM_STRIDED_BATCH(hipblasHandle_t handle,
-                                 hipblasOperation_t transa,
-                                 hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM_STRIDED_BATCH(rocblas_handle handle,
+                                 rocblas_operation transa,
+                                 rocblas_operation transb, int m, int n, int k,
                                  const float16 *alpha, const float16 *A,
                                  int lda, long long int strideA,  // NOLINT
                                  const float16 *B,                // NOLINT
@@ -183,12 +183,12 @@ struct CUBlas<platform::float16> {
                                  const float16 *beta, float16 *C, int ldc,
                                  long long int strideC,  // NOLINT
                                  int batchCount) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasHgemmStridedBatched(
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_hgemm_strided_batched(
         handle, transa, transb, m, n, k,
-        reinterpret_cast<const hipblasHalf*>(alpha),
-        reinterpret_cast<const hipblasHalf*>(A), lda, strideA,
-        reinterpret_cast<const hipblasHalf*>(B), ldb, strideB,
-        reinterpret_cast<const hipblasHalf*>(beta), reinterpret_cast<hipblasHalf*>(C),
+        reinterpret_cast<const rocblas_half*>(alpha),
+        reinterpret_cast<const rocblas_half*>(A), lda, strideA,
+        reinterpret_cast<const rocblas_half*>(B), ldb, strideB,
+        reinterpret_cast<const rocblas_half*>(beta), reinterpret_cast<rocblas_half*>(C),
         ldc, strideC, batchCount));
   }
 
@@ -196,17 +196,17 @@ struct CUBlas<platform::float16> {
   // https://docs.nvidia.com/cuda/cublas/index.html#cublassetmathmode
   template <typename... ARGS>
   static void GEMM_EX(platform::CUDADeviceContext *dev_ctx,
-                      hipblasOperation_t transa, hipblasOperation_t transb, int m,
+                      rocblas_operation transa, rocblas_operation transb, int m,
                       int n, int k, const void *alpha, const void *A,
-                      hipblasDatatype_t Atype, int lda, const void *B,
-                      hipblasDatatype_t Btype, int ldb, const void *beta, void *C,
-                      hipblasDatatype_t Ctype, int ldc,
-                      hipblasDatatype_t computeType) {
-    hipblasGemmAlgo_t algo = HIPBLAS_GEMM_DEFAULT;
-    dev_ctx->TensorCoreCublasCallIfAvailable([&](hipblasHandle_t handle) {
-      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasGemmEx(
+                      rocblas_datatype Atype, int lda, const void *B,
+                      rocblas_datatype Btype, int ldb, const void *beta, void *C,
+                      rocblas_datatype Ctype, int ldc,
+                      rocblas_datatype computeType) {
+    rocblas_gemm_algo algo = rocblas_gemm_algo_standard;
+    dev_ctx->TensorCoreCublasCallIfAvailable([&](rocblas_handle handle) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_gemm_ex(
           handle, transa, transb, m, n, k, alpha, A, Atype, lda, B, Btype, ldb,
-          beta, C, Ctype, ldc, computeType, algo));
+          beta, C, Ctype, ldc, C, Ctype, ldc, computeType, algo, 0, 0));
     });
   }
 };
@@ -215,30 +215,30 @@ template <>
 struct CUBlas<platform::complex64> {
   using complex64 = platform::complex64;
 
-  static void GEMV(hipblasHandle_t handle, hipblasOperation_t transa, int m,
+  static void GEMV(rocblas_handle handle, rocblas_operation transa, int m,
                    int n, const complex64 *alpha, const complex64 *A, int lda,
                    const complex64 *B, int ldb, const complex64 *beta,
                    complex64 *C, int ldc) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasCgemv(
-        handle, transa, m, n, reinterpret_cast<const hipblasComplex*>(alpha),
-        reinterpret_cast<const hipblasComplex*>(A), lda,
-        reinterpret_cast<const hipblasComplex*>(B), ldb,
-        reinterpret_cast<const hipblasComplex*>(beta),
-        reinterpret_cast<hipblasComplex*>(C), ldc));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_cgemv(
+        handle, transa, m, n, reinterpret_cast<const rocblas_float_complex*>(alpha),
+        reinterpret_cast<const rocblas_float_complex*>(A), lda,
+        reinterpret_cast<const rocblas_float_complex*>(B), ldb,
+        reinterpret_cast<const rocblas_float_complex*>(beta),
+        reinterpret_cast<rocblas_float_complex*>(C), ldc));
   }
 
-  static void AXPY(hipblasHandle_t handle, int n, const complex64 *alpha,
+  static void AXPY(rocblas_handle handle, int n, const complex64 *alpha,
                    const complex64 *X, const int incX, complex64 *Y,
                    const int incY) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasCaxpy(
-        handle, n, reinterpret_cast<const hipblasComplex*>(alpha),
-        reinterpret_cast<const hipblasComplex*>(X), incX,
-        reinterpret_cast<hipblasComplex*>(Y), incY));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_caxpy(
+        handle, n, reinterpret_cast<const rocblas_float_complex*>(alpha),
+        reinterpret_cast<const rocblas_float_complex*>(X), incX,
+        reinterpret_cast<rocblas_float_complex*>(Y), incY));
   }
 
-  static void GEMM_STRIDED_BATCH(hipblasHandle_t handle,
-                                 hipblasOperation_t transa,
-                                 hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM_STRIDED_BATCH(rocblas_handle handle,
+                                 rocblas_operation transa,
+                                 rocblas_operation transb, int m, int n, int k,
                                  const complex64 *alpha, const complex64 *A,
                                  int lda, long long int strideA,  // NOLINT
                                  const complex64 *B,              // NOLINT
@@ -246,40 +246,44 @@ struct CUBlas<platform::complex64> {
                                  const complex64 *beta, complex64 *C, int ldc,
                                  long long int strideC,  // NOLINT
                                  int batchCount) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasCgemmStridedBatched(
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_cgemm_strided_batched(
         handle, transa, transb, m, n, k,
-        reinterpret_cast<const hipblasComplex*>(alpha),
-        reinterpret_cast<const hipblasComplex*>(A), lda, strideA,
-        reinterpret_cast<const hipblasComplex*>(B), ldb, strideB,
-        reinterpret_cast<const hipblasComplex*>(beta),
-        reinterpret_cast<hipblasComplex*>(C), ldc, strideC, batchCount));
+        reinterpret_cast<const rocblas_float_complex*>(alpha),
+        reinterpret_cast<const rocblas_float_complex*>(A), lda, strideA,
+        reinterpret_cast<const rocblas_float_complex*>(B), ldb, strideB,
+        reinterpret_cast<const rocblas_float_complex*>(beta),
+        reinterpret_cast<rocblas_float_complex*>(C), ldc, strideC, batchCount));
   }
 
-  static void GEMM(hipblasHandle_t handle, hipblasOperation_t transa,
-                   hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM(rocblas_handle handle, rocblas_operation transa,
+                   rocblas_operation transb, int m, int n, int k,
                    const complex64 *alpha, const complex64 *A, int lda,
                    const complex64 *B, int ldb, const complex64 *beta,
                    complex64 *C, int ldc) {
-    PADDLE_THROW(platform::errors::Unimplemented(
-        "cublasCgemm is not supported on HIP platform."));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_cgemm(
+        handle, transa, transb, m, n, k,
+        reinterpret_cast<const rocblas_float_complex*>(alpha),
+        reinterpret_cast<const rocblas_float_complex*>(A), lda,
+        reinterpret_cast<const rocblas_float_complex*>(B), ldb,
+        reinterpret_cast<const rocblas_float_complex*>(beta),
+        reinterpret_cast<rocblas_float_complex*>(C), ldc));
   }
 
   // NOTES: GEMM_EX can use Tensor Core to accelerate matrix multiply.
   // https://docs.nvidia.com/cuda/cublas/index.html#cublassetmathmode
   template <typename... ARGS>
   static void GEMM_EX(platform::CUDADeviceContext *dev_ctx,
-                      hipblasOperation_t transa, hipblasOperation_t transb, int m,
+                      rocblas_operation transa, rocblas_operation transb, int m,
                       int n, int k, const void *alpha, const void *A,
-                      hipblasDatatype_t Atype, int lda, const void *B,
-                      hipblasDatatype_t Btype, int ldb, const void *beta, void *C,
-                      hipblasDatatype_t Ctype, int ldc,
-                      hipblasDatatype_t computeType) {
-
-    hipblasGemmAlgo_t algo = HIPBLAS_GEMM_DEFAULT;
-    dev_ctx->TensorCoreCublasCallIfAvailable([&](hipblasHandle_t handle) {
-      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasGemmEx(
+                      rocblas_datatype Atype, int lda, const void *B,
+                      rocblas_datatype Btype, int ldb, const void *beta, void *C,
+                      rocblas_datatype Ctype, int ldc,
+                      rocblas_datatype computeType) {
+    rocblas_gemm_algo algo = rocblas_gemm_algo_standard;
+    dev_ctx->TensorCoreCublasCallIfAvailable([&](rocblas_handle handle) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_gemm_ex(
           handle, transa, transb, m, n, k, alpha, A, Atype, lda, B, Btype, ldb,
-          beta, C, Ctype, ldc, computeType, algo));
+          beta, C, Ctype, ldc, C, Ctype, ldc, computeType, algo, 0, 0));
     });
   }
 };
@@ -288,30 +292,30 @@ template <>
 struct CUBlas<platform::complex128> {
   using complex128 = platform::complex128;
 
-  static void GEMV(hipblasHandle_t handle, hipblasOperation_t transa, int m,
+  static void GEMV(rocblas_handle handle, rocblas_operation transa, int m,
                    int n, const complex128 *alpha, const complex128 *A, int lda,
                    const complex128 *B, int ldb, const complex128 *beta,
                    complex128 *C, int ldc) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasZgemv(
-        handle, transa, m, n, reinterpret_cast<const hipblasDoubleComplex*>(alpha),
-        reinterpret_cast<const hipblasDoubleComplex*>(A), lda,
-        reinterpret_cast<const hipblasDoubleComplex*>(B), ldb,
-        reinterpret_cast<const hipblasDoubleComplex*>(beta),
-        reinterpret_cast<hipblasDoubleComplex*>(C), ldc));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_zgemv(
+        handle, transa, m, n, reinterpret_cast<const rocblas_double_complex*>(alpha),
+        reinterpret_cast<const rocblas_double_complex*>(A), lda,
+        reinterpret_cast<const rocblas_double_complex*>(B), ldb,
+        reinterpret_cast<const rocblas_double_complex*>(beta),
+        reinterpret_cast<rocblas_double_complex*>(C), ldc));
   }
 
-  static void AXPY(hipblasHandle_t handle, int n, const complex128 *alpha,
+  static void AXPY(rocblas_handle handle, int n, const complex128 *alpha,
                    const complex128 *X, const int incX, complex128 *Y,
                    const int incY) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasZaxpy(
-        handle, n, reinterpret_cast<const hipblasDoubleComplex*>(alpha),
-        reinterpret_cast<const hipblasDoubleComplex*>(X), incX,
-        reinterpret_cast<hipblasDoubleComplex*>(Y), incY));
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_zaxpy(
+        handle, n, reinterpret_cast<const rocblas_double_complex*>(alpha),
+        reinterpret_cast<const rocblas_double_complex*>(X), incX,
+        reinterpret_cast<rocblas_double_complex*>(Y), incY));
   }
 
-  static void GEMM_STRIDED_BATCH(hipblasHandle_t handle,
-                                 hipblasOperation_t transa,
-                                 hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM_STRIDED_BATCH(rocblas_handle handle,
+                                 rocblas_operation transa,
+                                 rocblas_operation transb, int m, int n, int k,
                                  const complex128 *alpha, const complex128 *A,
                                  int lda, long long int strideA,  // NOLINT
                                  const complex128 *B,             // NOLINT
@@ -319,44 +323,44 @@ struct CUBlas<platform::complex128> {
                                  const complex128 *beta, complex128 *C, int ldc,
                                  long long int strideC,  // NOLINT
                                  int batchCount) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasZgemmStridedBatched(
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_zgemm_strided_batched(
         handle, transa, transb, m, n, k,
-        reinterpret_cast<const hipblasDoubleComplex*>(alpha),
-        reinterpret_cast<const hipblasDoubleComplex*>(A), lda, strideA,
-        reinterpret_cast<const hipblasDoubleComplex*>(B), ldb, strideB,
-        reinterpret_cast<const hipblasDoubleComplex*>(beta),
-        reinterpret_cast<hipblasDoubleComplex*>(C), ldc, strideC, batchCount));
+        reinterpret_cast<const rocblas_double_complex*>(alpha),
+        reinterpret_cast<const rocblas_double_complex*>(A), lda, strideA,
+        reinterpret_cast<const rocblas_double_complex*>(B), ldb, strideB,
+        reinterpret_cast<const rocblas_double_complex*>(beta),
+        reinterpret_cast<rocblas_double_complex*>(C), ldc, strideC, batchCount));
   }
 
-  static void GEMM(hipblasHandle_t handle, hipblasOperation_t transa,
-                   hipblasOperation_t transb, int m, int n, int k,
+  static void GEMM(rocblas_handle handle, rocblas_operation transa,
+                   rocblas_operation transb, int m, int n, int k,
                    const complex128 *alpha, const complex128 *A, int lda,
                    const complex128 *B, int ldb, const complex128 *beta,
                    complex128 *C, int ldc) {
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasZgemm(
+    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_zgemm(
         handle, transa, transb, m, n, k,
-        reinterpret_cast<const hipblasDoubleComplex*>(alpha),
-        reinterpret_cast<const hipblasDoubleComplex*>(A), lda,
-        reinterpret_cast<const hipblasDoubleComplex*>(B), ldb,
-        reinterpret_cast<const hipblasDoubleComplex*>(beta),
-        reinterpret_cast<hipblasDoubleComplex*>(C), ldc));
+        reinterpret_cast<const rocblas_double_complex*>(alpha),
+        reinterpret_cast<const rocblas_double_complex*>(A), lda,
+        reinterpret_cast<const rocblas_double_complex*>(B), ldb,
+        reinterpret_cast<const rocblas_double_complex*>(beta),
+        reinterpret_cast<rocblas_double_complex*>(C), ldc));
   }
 
   // NOTES: GEMM_EX can use Tensor Core to accelerate matrix multiply.
   // https://docs.nvidia.com/cuda/cublas/index.html#cublassetmathmode
   template <typename... ARGS>
   static void GEMM_EX(platform::CUDADeviceContext *dev_ctx,
-                      hipblasOperation_t transa, hipblasOperation_t transb, int m,
+                      rocblas_operation transa, rocblas_operation transb, int m,
                       int n, int k, const void *alpha, const void *A,
-                      hipblasDatatype_t Atype, int lda, const void *B,
-                      hipblasDatatype_t Btype, int ldb, const void *beta, void *C,
-                      hipblasDatatype_t Ctype, int ldc,
-                      hipblasDatatype_t computeType) {
-    hipblasGemmAlgo_t algo = HIPBLAS_GEMM_DEFAULT;
-    dev_ctx->TensorCoreCublasCallIfAvailable([&](hipblasHandle_t handle) {
-      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipblasGemmEx(
+                      rocblas_datatype Atype, int lda, const void *B,
+                      rocblas_datatype Btype, int ldb, const void *beta, void *C,
+                      rocblas_datatype Ctype, int ldc,
+                      rocblas_datatype computeType) {
+    rocblas_gemm_algo algo = rocblas_gemm_algo_standard;
+    dev_ctx->TensorCoreCublasCallIfAvailable([&](rocblas_handle handle) {
+      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::rocblas_gemm_ex(
           handle, transa, transb, m, n, k, alpha, A, Atype, lda, B, Btype, ldb,
-          beta, C, Ctype, ldc, computeType, algo));
+          beta, C, Ctype, ldc, C, Ctype, ldc, computeType, algo, 0, 0));
     });
   }
 };
@@ -371,11 +375,11 @@ void Blas<platform::CUDADeviceContext>::GEMM(CBLAS_TRANSPOSE transA,
   // the cblas convention.
   int lda = (transA == CblasNoTrans) ? K : M;
   int ldb = (transB == CblasNoTrans) ? N : K;
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasOperation_t cuTransB =
-      (transB == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_operation cuTransB =
+      (transB == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GEMM(handle, cuTransB, cuTransA, N, M, K, &alpha, B, ldb, A,
                     lda, &beta, C, N);
   });
@@ -392,10 +396,10 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
   // the cblas convention.
   int lda = (transA == CblasNoTrans) ? K : M;
   int ldb = (transB == CblasNoTrans) ? N : K;
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasOperation_t cuTransB =
-      (transB == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_operation cuTransB =
+      (transB == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
 
   // TODO(kexinzhao): add processing code for compute capability < 53 case
   PADDLE_ENFORCE_GE(
@@ -410,8 +414,8 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
 
   auto &cuda_ctx = const_cast<platform::CUDADeviceContext &>(context_);
   CUBlas<platform::float16>::GEMM_EX(
-      &cuda_ctx, cuTransB, cuTransA, N, M, K, &h_alpha, B, HIPBLAS_R_16F, ldb, A,
-      HIPBLAS_R_16F, lda, &h_beta, C, HIPBLAS_R_16F, N, HIPBLAS_R_32F);
+      &cuda_ctx, cuTransB, cuTransA, N, M, K, &h_alpha, B, rocblas_datatype_f16_r, ldb, A,
+      rocblas_datatype_f16_r, lda, &h_beta, C, rocblas_datatype_f16_r, N, rocblas_datatype_f32_r);
 }
 
 template <>
@@ -425,10 +429,10 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
   // the cblas convention.
   int lda = (transA == CblasNoTrans) ? K : M;
   int ldb = (transB == CblasNoTrans) ? N : K;
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasOperation_t cuTransB =
-      (transB == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_operation cuTransB =
+      (transB == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
 
   // TODO(kexinzhao): add processing code for compute capability < 53 case
   PADDLE_ENFORCE_GE(
@@ -444,8 +448,8 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
 
   auto &cuda_ctx = const_cast<platform::CUDADeviceContext &>(context_);
   CUBlas<platform::complex64>::GEMM_EX(
-      &cuda_ctx, cuTransB, cuTransA, N, M, K, &c_alpha, B, HIPBLAS_C_32F, ldb, A,
-      HIPBLAS_C_32F, lda, &c_beta, C, HIPBLAS_C_32F, N, HIPBLAS_C_32F);
+      &cuda_ctx, cuTransB, cuTransA, N, M, K, &c_alpha, B, rocblas_datatype_f32_c, ldb, A,
+      rocblas_datatype_f32_c, lda, &c_beta, C, rocblas_datatype_f32_c, N, rocblas_datatype_f32_c);
 }
 
 template <>
@@ -459,10 +463,10 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
   // the cblas convention.
   int lda = (transA == CblasNoTrans) ? K : M;
   int ldb = (transB == CblasNoTrans) ? N : K;
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasOperation_t cuTransB =
-      (transB == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_operation cuTransB =
+      (transB == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
 
   // TODO(kexinzhao): add processing code for compute capability < 53 case
   PADDLE_ENFORCE_GE(
@@ -479,8 +483,8 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
 
   auto &cuda_ctx = const_cast<platform::CUDADeviceContext &>(context_);
   CUBlas<platform::complex128>::GEMM_EX(
-      &cuda_ctx, cuTransB, cuTransA, N, M, K, &c_alpha, B, HIPBLAS_C_64F, ldb, A,
-      HIPBLAS_C_64F, lda, &c_beta, C, HIPBLAS_C_64F, N, HIPBLAS_C_64F);
+      &cuda_ctx, cuTransB, cuTransA, N, M, K, &c_alpha, B, rocblas_datatype_f64_c, ldb, A,
+      rocblas_datatype_f64_c, lda, &c_beta, C, rocblas_datatype_f64_c, N, rocblas_datatype_f64_c);
 }
 
 template <>
@@ -491,9 +495,9 @@ void Blas<platform::CUDADeviceContext>::GEMM(bool transA, bool transB, int M,
                                              T beta, T *C, int ldc) const {
   // Note that cublas follows fortran order, so the order is different from
   // the cblas convention.
-  hipblasOperation_t cuTransA = transA ? HIPBLAS_OP_T : HIPBLAS_OP_N;
-  hipblasOperation_t cuTransB = transB ? HIPBLAS_OP_T : HIPBLAS_OP_N;
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  rocblas_operation cuTransA = transA ? rocblas_operation_transpose : rocblas_operation_none;
+  rocblas_operation cuTransB = transB ? rocblas_operation_transpose : rocblas_operation_none;
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GEMM(handle, cuTransB, cuTransA, N, M, K, &alpha, B, ldb, A,
                     lda, &beta, C, ldc);
   });
@@ -507,10 +511,10 @@ inline void Blas<platform::CUDADeviceContext>::GEMM(
     platform::float16 beta, platform::float16 *C, int ldc) const {
   // Note that cublas follows fortran order, so the order is different from
   // the cblas convention.
-  hipblasOperation_t cuTransA = transA ? HIPBLAS_OP_T : HIPBLAS_OP_N;
-  hipblasOperation_t cuTransB = transB ? HIPBLAS_OP_T : HIPBLAS_OP_N;
+  rocblas_operation cuTransA = transA ? rocblas_operation_transpose : rocblas_operation_none;
+  rocblas_operation cuTransB = transB ? rocblas_operation_transpose : rocblas_operation_none;
 
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<platform::float16>::GEMM(handle, cuTransB, cuTransA, N, M, K, &alpha,
                                     B, ldb, A, lda, &beta, C, ldc);
   });
@@ -520,7 +524,7 @@ template <>
 template <typename T>
 void Blas<platform::CUDADeviceContext>::AXPY(int n, T alpha, const T *x,
                                              T *y) const {
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::AXPY(handle, n, &alpha, x, 1, y, 1);
   });
 }
@@ -529,14 +533,14 @@ template <>
 template <typename T>
 void Blas<platform::CUDADeviceContext>::SCAL(int n, const T alpha, T *x) const {
   context_.CublasCall(
-      [&](hipblasHandle_t handle) { CUBlas<T>::SCAL(handle, n, &alpha, x, 1); });
+      [&](rocblas_handle handle) { CUBlas<T>::SCAL(handle, n, &alpha, x, 1); });
 }
 
 template <>
 template <typename T>
 void Blas<platform::CUDADeviceContext>::VCOPY(int n, const T *x, T *y) const {
   context_.CublasCall(
-      [&](hipblasHandle_t handle) { CUBlas<T>::VCOPY(handle, n, x, 1, y, 1); });
+      [&](rocblas_handle handle) { CUBlas<T>::VCOPY(handle, n, x, 1, y, 1); });
 }
 
 template <>
@@ -544,9 +548,9 @@ template <typename T>
 void Blas<platform::CUDADeviceContext>::GEMV(bool trans_a, int M, int N,
                                              T alpha, const T *A, const T *B,
                                              T beta, T *C) const {
-  hipblasOperation_t cuTransA = !trans_a ? HIPBLAS_OP_T : HIPBLAS_OP_N;
+  rocblas_operation cuTransA = !trans_a ? rocblas_operation_transpose : rocblas_operation_none;
 
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GEMV(handle, cuTransA, N, M, &alpha, A, N, B, 1, &beta, C, 1);
   });
 }
@@ -578,12 +582,12 @@ void Blas<platform::CUDADeviceContext>::BatchedGEMM(
   int lda = (transA == CblasNoTrans) ? K : M;
   int ldb = (transB == CblasNoTrans) ? N : K;
   int ldc = N;
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasOperation_t cuTransB =
-      (transB == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_operation cuTransB =
+      (transB == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
   const int64_t strideC = M * N;
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GEMM_STRIDED_BATCH(handle, cuTransB, cuTransA, N, M, K, &alpha,
                                   B, ldb, strideB, A, lda, strideA, &beta, C,
                                   ldc, strideC, batchCount);
@@ -623,17 +627,17 @@ void Blas<platform::CUDADeviceContext>::TRSM(CBLAS_SIDE side, CBLAS_UPLO uplo,
                                              int ldb) const {
   // solve row major `op ( A ) X = α B` by taking it as `X' op ( A' )  =  α B'`
   // where ' stands for transpose
-  hipblasSideMode_t cuSide =
-      (side == CblasLeft) ? HIPBLAS_SIDE_RIGHT : HIPBLAS_SIDE_LEFT;
-  hipblasFillMode_t cuUplo =
-      (uplo == CblasLower) ? HIPBLAS_FILL_MODE_UPPER : HIPBLAS_FILL_MODE_LOWER;
+  rocblas_side cuSide =
+      (side == CblasLeft) ? rocblas_side_right : rocblas_side_left;
+  rocblas_fill cuUplo =
+      (uplo == CblasLower) ? rocblas_fill_upper : rocblas_fill_lower;
   // use CUBLAS_OP_C (conjugate transpose) for complex
-  hipblasOperation_t cuTransA =
-      (transA == CblasNoTrans) ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-  hipblasDiagType_t cuDiag =
-      (diag == CblasUnit) ? HIPBLAS_DIAG_UNIT : HIPBLAS_DIAG_NON_UNIT;
+  rocblas_operation cuTransA =
+      (transA == CblasNoTrans) ? rocblas_operation_none : rocblas_operation_transpose;
+  rocblas_diagonal cuDiag =
+      (diag == CblasUnit) ? rocblas_diagonal_unit : rocblas_diagonal_non_unit;
 
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::TRSM(handle, cuSide, cuUplo, cuTransA, cuDiag, N, M, &alpha, A,
                     lda, B, ldb);
   });
@@ -644,7 +648,7 @@ template <typename T>
 void Blas<platform::CUDADeviceContext>::BatchedGETRF(int n, T **a, int *ipiv,
                                                      int *info,
                                                      int batch_size) const {
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GETRF_BATCH(handle, n, a, n, ipiv, info, batch_size);
   });
 }
@@ -662,7 +666,7 @@ void Blas<platform::CUDADeviceContext>::BatchedGETRI(int n, const T **a,
           "in-place. The memory space of output matrix (address: %p) cannot "
           "overlap memory space of input matrix (address: %p).",
           a_inv, a));
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::GETRI_BATCH(handle, n, a, n, ipiv, a_inv, n, info, batch_size);
   });
 }
@@ -672,7 +676,7 @@ template <typename T>
 void Blas<platform::CUDADeviceContext>::BatchedMatInv(int n, const T **a,
                                                       T **a_inv, int *info,
                                                       int batch_size) const {
-  context_.CublasCall([&](hipblasHandle_t handle) {
+  context_.CublasCall([&](rocblas_handle handle) {
     CUBlas<T>::MATINV_BATCH(handle, n, a, n, a_inv, n, info, batch_size);
   });
 }

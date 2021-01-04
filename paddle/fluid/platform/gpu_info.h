@@ -17,6 +17,8 @@ limitations under the License. */
 #ifdef PADDLE_WITH_CUDA
 #include <cuda_runtime.h>
 #define gpuSuccess cudaSuccess
+#define gpuErrorMemoryAllocation cudaErrorMemoryAllocation
+#define gpuErrorCudartUnloading cudaErrorCudartUnloading
 typedef cudaError_t gpuError_t;
 typedef cudaEvent_t gpuEvent_t;
 typedef cudaStream_t gpuStream_t;
@@ -27,6 +29,8 @@ typedef enum cudaMemcpyKind gpuMemcpyKind;
 #ifdef PADDLE_WITH_HIP
 #include <hip/hip_runtime.h>
 #define gpuSuccess hipSuccess
+#define gpuErrorMemoryAllocation hipErrorOutOfMemory
+#define gpuErrorCudartUnloading hipErrorDeinitialized
 typedef hipError_t gpuError_t;
 typedef hipEvent_t gpuEvent_t;
 typedef hipStream_t gpuStream_t;

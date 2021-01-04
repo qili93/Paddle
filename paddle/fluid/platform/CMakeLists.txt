@@ -56,7 +56,7 @@ IF(WITH_GPU)
     nv_library(gpu_info SRCS gpu_info.cc DEPS gflags glog enforce monitor dynload_cuda)
 ENDIF()
 IF(WITH_ROCM_PLATFORM)
-    hip_library(gpu_info SRCS rocm_info.cc DEPS gflags glog enforce monitor dynload_cuda)
+    hip_library(gpu_info SRCS gpu_info.cc DEPS gflags glog enforce monitor dynload_cuda)
 ENDIF()
 
 cc_library(place SRCS place.cc DEPS enforce boost)

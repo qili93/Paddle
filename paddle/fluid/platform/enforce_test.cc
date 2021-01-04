@@ -315,8 +315,8 @@ bool CheckCudaStatusFailure(T value, const std::string& msg) {
 #ifdef PADDLE_WITH_HIP
 TEST(enforce, hip_success) {
   EXPECT_TRUE(CheckCudaStatusSuccess(hipSuccess));
-  EXPECT_TRUE(CheckCudaStatusFailure(hipErrorInvalidValue, "HIP error"));
-  EXPECT_TRUE(CheckCudaStatusFailure(hipErrorOutOfMemory, "HIP error"));
+  EXPECT_TRUE(CheckCudaStatusFailure(hipErrorInvalidValue, "Hip error"));
+  EXPECT_TRUE(CheckCudaStatusFailure(hipErrorOutOfMemory, "Hip error"));
 
   EXPECT_TRUE(CheckCudaStatusSuccess(HIPRAND_STATUS_SUCCESS));
   EXPECT_TRUE(
@@ -329,15 +329,15 @@ TEST(enforce, hip_success) {
       CheckCudaStatusFailure(HIPDNN_STATUS_NOT_INITIALIZED, "Hipdnn error"));
   EXPECT_TRUE(CheckCudaStatusFailure(HIPDNN_STATUS_ALLOC_FAILED, "Hipdnn error"));
 
-  EXPECT_TRUE(CheckCudaStatusSuccess(HIPBLAS_STATUS_SUCCESS));
+  EXPECT_TRUE(CheckCudaStatusSuccess(rocblas_status_success));
   EXPECT_TRUE(
-      CheckCudaStatusFailure(HIPBLAS_STATUS_NOT_INITIALIZED, "Hipblas error"));
+      CheckCudaStatusFailure(rocblas_status_invalid_handle, "Rocblas error"));
   EXPECT_TRUE(
-      CheckCudaStatusFailure(HIPBLAS_STATUS_INVALID_VALUE, "Hipblas error"));
+      CheckCudaStatusFailure(rocblas_status_invalid_value, "Rocblas error"));
 #if !defined(__APPLE__) && defined(PADDLE_WITH_RCCL)
   EXPECT_TRUE(CheckCudaStatusSuccess(ncclSuccess));
-  EXPECT_TRUE(CheckCudaStatusFailure(ncclUnhandledCudaError, "Nccl error"));
-  EXPECT_TRUE(CheckCudaStatusFailure(ncclSystemError, "Nccl error"));
+  EXPECT_TRUE(CheckCudaStatusFailure(ncclUnhandledCudaError, "Rccl error"));
+  EXPECT_TRUE(CheckCudaStatusFailure(ncclSystemError, "Rccl error"));
 #endif
 }
 #else

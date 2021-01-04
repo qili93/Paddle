@@ -1,11 +1,13 @@
 # A image for building paddle binaries
 # Use rocm-terminal base image for both rocm environment
 # When you modify it, please be aware of rocm version
-# ROCM 3.5.1 docker build:
+#
+# Usage: ROCM 3.5.1 docker build:
 # docker build -f tools/dockerfile/Dockerfile.rocm \
 #                 --build-arg ROCM_VERSION=3.5.1 \
 #                 -t paddlepaddle/paddle-rocm-dev:3.5.1 .
-# ROCM 3.5.1 docker run:
+# 
+# Usage: ROCM 3.5.1 docker run:
 # docker run -it --device=/dev/kfd --device=/dev/dri \
 # --security-opt seccomp=unconfined --group-add video \
 # paddlepaddle/paddle-rocm-dev:3.5.1 /bin/bash

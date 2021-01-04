@@ -37,7 +37,7 @@ limitations under the License. */
 #elif defined(PADDLE_WITH_HIP)
 #include <hiprand.h>
 #include <hipdnn.h>
-#include <hipblas.h>
+#include <rocblas.h>
 #include <thrust/system/hip/error.h>
 #include <thrust/system_error.h>
 #endif
@@ -78,7 +78,7 @@ limitations under the License. */
 #elif defined(PADDLE_WITH_HIP)
 #include "paddle/fluid/platform/dynload/hiprand.h"
 #include "paddle/fluid/platform/dynload/hipdnn.h"
-#include "paddle/fluid/platform/dynload/hipblas.h"
+#include "paddle/fluid/platform/dynload/rocblas.h"
 #ifdef PADDLE_WITH_RCCL
 #include "paddle/fluid/platform/dynload/rccl.h"
 #endif  // PADDLE_WITH_RCCL
@@ -1122,37 +1122,35 @@ inline std::string build_nvidia_error_msg(hipdnnStatus_t stat) {
   return msg + platform::dynload::hipdnnGetErrorString(stat) + " ";
 }
 
-/***** HIPBLAS ERROR *****/
-inline bool is_error(hipblasStatus_t stat) {
-  return stat != HIPBLAS_STATUS_SUCCESS;
+/***** ROCBLAS ERROR *****/
+inline bool is_error(rocblas_status stat) {
+  return stat != rocblas_status_success;
 }
 
-inline const char* hipblasGetErrorString(hipblasStatus_t stat) {
+inline const char* rocblasGetErrorString(rocblas_status stat) {
   switch (stat) {
-    case HIPBLAS_STATUS_NOT_INITIALIZED:
-      return "HIPBLAS_STATUS_NOT_INITIALIZED";
-    case HIPBLAS_STATUS_ALLOC_FAILED:
-      return "HIPBLAS_STATUS_ALLOC_FAILED";
-    case HIPBLAS_STATUS_INVALID_VALUE:
-      return "HIPBLAS_STATUS_INVALID_VALUE";
-    case HIPBLAS_STATUS_ARCH_MISMATCH:
-      return "HIPBLAS_STATUS_ARCH_MISMATCH";
-    case HIPBLAS_STATUS_MAPPING_ERROR:
-      return "HIPBLAS_STATUS_MAPPING_ERROR";
-    case HIPBLAS_STATUS_EXECUTION_FAILED:
-      return "HIPBLAS_STATUS_EXECUTION_FAILED";
-    case HIPBLAS_STATUS_INTERNAL_ERROR:
-      return "HIPBLAS_STATUS_INTERNAL_ERROR";
-    case HIPBLAS_STATUS_NOT_SUPPORTED:
-      return "HIPBLAS_STATUS_NOT_SUPPORTED";
+    case rocblas_status_invalid_handle:
+      return "rocblas_status_invalid_handle";
+    case rocblas_status_memory_error:
+      return "rocblas_status_memory_error";
+    case rocblas_status_invalid_value:
+      return "rocblas_status_invalid_value";
+    case rocblas_status_not_implemented:
+      return "rocblas_status_not_implemented";
+    case rocblas_status_invalid_pointer:
+      return "rocblas_status_invalid_pointer";
+    case rocblas_status_invalid_size:
+      return "rocblas_status_invalid_size";
+    case rocblas_status_internal_error:
+      return "rocblas_status_internal_error";
     default:
       return "Unknown cublas status";
   }
 }
 
-inline std::string build_nvidia_error_msg(hipblasStatus_t stat) {
-  std::string msg(" HIPBLAS error, ");
-  return msg + hipblasGetErrorString(stat) + " ";
+inline std::string build_nvidia_error_msg(rocblas_status stat) {
+  std::string msg(" Rocblas error, ");
+  return msg + rocblasGetErrorString(stat) + " ";
 }
 
 /****** RCCL ERROR ******/
@@ -1182,7 +1180,7 @@ struct CudaStatusType {};
 DEFINE_CUDA_STATUS_TYPE(hipError_t, hipSuccess);
 DEFINE_CUDA_STATUS_TYPE(hiprandStatus_t, HIPRAND_STATUS_SUCCESS);
 DEFINE_CUDA_STATUS_TYPE(hipdnnStatus_t, HIPDNN_STATUS_SUCCESS);
-DEFINE_CUDA_STATUS_TYPE(hipblasStatus_t, HIPBLAS_STATUS_SUCCESS);
+DEFINE_CUDA_STATUS_TYPE(rocblas_status, rocblas_status_success);
 
 #if !defined(__APPLE__) && defined(PADDLE_WITH_RCCL)
 DEFINE_CUDA_STATUS_TYPE(ncclResult_t, ncclSuccess);
