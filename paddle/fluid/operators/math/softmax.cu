@@ -45,15 +45,23 @@ void SoftmaxCUDNNFunctor<T>::operator()(
   if (cudnn_tensor_dims.size() <= 2) {
     cudnn_tensor_dims.resize(4, 1);
   }
-  cudnnTensorDescriptor_t cudnn_x_desc =
+  gpuDnnTensorDesc_t cudnn_x_desc =
       xDesc.descriptor<T>(layout, cudnn_tensor_dims);
-  cudnnTensorDescriptor_t cudnn_y_desc =
+  gpuDnnTensorDesc_t cudnn_y_desc =
       xDesc.descriptor<T>(layout, cudnn_tensor_dims);
+#ifdef PADDLE_WITH_CUDA
   PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnSoftmaxForward(
       context.cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-      CUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
+      GPUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
       X->data<T>(), CudnnDataType<T>::kZero(), cudnn_y_desc,
       Y->mutable_data<T>(context.GetPlace())));
+#else
+  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipdnnSoftmaxForward(
+      context.cudnn_handle(), HIPDNN_SOFTMAX_ACCURATE,
+      HIPDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_x_desc,
+      X->data<T>(), CudnnDataType<T>::kZero(), cudnn_y_desc,
+      Y->mutable_data<T>(context.GetPlace())));
+#endif
 }
 
 template <typename T>
@@ -74,25 +82,32 @@ void SoftmaxGradCUDNNFunctor<T>::operator()(
   if (cudnn_tensor_dims.size() <= 2) {
     cudnn_tensor_dims.resize(4, 1);
   }
-  cudnnTensorDescriptor_t cudnn_y_desc =
+  gpuDnnTensorDesc_t cudnn_y_desc =
       yDesc.descriptor<T>(layout, cudnn_tensor_dims);
-  cudnnTensorDescriptor_t cudnn_xgrad_desc =
+  gpuDnnTensorDesc_t cudnn_xgrad_desc =
       dxDesc.descriptor<T>(layout, cudnn_tensor_dims);
-  cudnnTensorDescriptor_t cudnn_ygrad_desc =
+  gpuDnnTensorDesc_t cudnn_ygrad_desc =
       dyDesc.descriptor<T>(layout, cudnn_tensor_dims);
+#ifdef PADDLE_WITH_CUDA
   PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnSoftmaxBackward(
       context.cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-      CUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
+      GPUDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
       Y->data<T>(), cudnn_ygrad_desc, YGrad->data<T>(),
       CudnnDataType<T>::kZero(), cudnn_xgrad_desc,
       XGrad->mutable_data<T>(context.GetPlace())));
+#else
+  PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::hipdnnSoftmaxBackward(
+      context.cudnn_handle(), HIPDNN_SOFTMAX_ACCURATE,
+      HIPDNN_SOFTMAX_MODE_INSTANCE, CudnnDataType<T>::kOne(), cudnn_y_desc,
+      Y->data<T>(), cudnn_ygrad_desc, YGrad->data<T>(),
+      CudnnDataType<T>::kZero(), cudnn_xgrad_desc,
+      XGrad->mutable_data<T>(context.GetPlace())));
+#endif
 }
 
 template class SoftmaxCUDNNFunctor<platform::float16>;
 template class SoftmaxCUDNNFunctor<float>;
-template class SoftmaxCUDNNFunctor<double>;
 template class SoftmaxGradCUDNNFunctor<float>;
-template class SoftmaxGradCUDNNFunctor<double>;
 template class SoftmaxGradCUDNNFunctor<platform::float16>;
 
 template class SoftmaxFunctor<platform::CUDADeviceContext, platform::float16,
@@ -107,6 +122,12 @@ template class SoftmaxGradFunctor<platform::CUDADeviceContext, float>;
 template class SoftmaxGradFunctor<platform::CUDADeviceContext, double>;
 template class SoftmaxGradFunctor<platform::CUDADeviceContext,
                                   platform::float16>;
+
+// HIP platform not support hipdnn double
+#ifdef PADDLE_WITH_CUDA
+template class SoftmaxCUDNNFunctor<double>;
+template class SoftmaxGradCUDNNFunctor<double>;
+#endif
 
 }  // namespace math
 }  // namespace operators

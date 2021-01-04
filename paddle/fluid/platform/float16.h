@@ -20,6 +20,7 @@ limitations under the License. */
 #ifdef PADDLE_WITH_CUDA
 #include <cuda.h>
 #endif  // PADDLE_WITH_CUDA
+
 #ifdef PADDLE_WITH_HIP
 #define CUDA_VERSION 10000
 #include <hip/hip_runtime.h>

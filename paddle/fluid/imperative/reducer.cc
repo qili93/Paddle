@@ -17,7 +17,7 @@
 namespace paddle {
 namespace imperative {
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 std::shared_ptr<Reducer> Reducer::s_instance_ = NULL;
 
 // context is used to select the stream for concat
@@ -324,12 +324,21 @@ void Reducer::MarkGroupReady(size_t group_index) {
     return;
   }
 
+#ifdef PADDLE_WITH_HIP
+  PADDLE_ENFORCE_CUDA_SUCCESS(
+      hipEventRecord(group_events_[group_index].get(), compute_stream_));
+  for (int i = 0; i < nrings_; ++i) {
+    PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamWaitEvent(
+        comm_streams_[i], group_events_[group_index].get(), 0));
+  }
+#else
   PADDLE_ENFORCE_CUDA_SUCCESS(
       cudaEventRecord(group_events_[group_index].get(), compute_stream_));
   for (int i = 0; i < nrings_; ++i) {
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamWaitEvent(
         comm_streams_[i], group_events_[group_index].get(), 0));
   }
+#endif
 
   for (; next_group_ < groups_.size() && groups_[next_group_].pending_ == 0;
        ++next_group_) {
@@ -373,6 +382,16 @@ std::vector<std::vector<size_t>> Reducer::RebuildGruops() {
 
 void Reducer::FinalizeBackward() {
   // Must prevent compute_stream_ starting until all comm streams have finished
+#ifdef PADDLE_WITH_HIP
+  for (int i = 0; i < nrings_; ++i) {
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        hipEventRecord(comm_events_[i].get(), comm_streams_[i]));
+  }
+  for (int i = 0; i < nrings_; ++i) {
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        hipStreamWaitEvent(compute_stream_, comm_events_[i].get(), 0));
+  }
+#else
   for (int i = 0; i < nrings_; ++i) {
     PADDLE_ENFORCE_CUDA_SUCCESS(
         cudaEventRecord(comm_events_[i].get(), comm_streams_[i]));
@@ -381,6 +400,7 @@ void Reducer::FinalizeBackward() {
     PADDLE_ENFORCE_CUDA_SUCCESS(
         cudaStreamWaitEvent(compute_stream_, comm_events_[i].get(), 0));
   }
+#endif
 
   if (!has_rebuilt_group_) {
     VLOG(3) << "Start rebuilding the groups";

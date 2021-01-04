@@ -48,14 +48,9 @@ DEFINE_string(op_dir, "", "Specify path for loading user-defined op library.");
 
 #ifdef PADDLE_WITH_HIP
 
-DEFINE_string(miopen_dir, "",
-              "Specify path for loading libMIOpen.so. For instance, "
-              "/opt/rocm/miopen/lib. If empty [default], dlopen "
-              "will search miopen from LD_LIBRARY_PATH");
-
 DEFINE_string(rocm_dir, "",
-              "Specify path for loading rocm library, such as librocblas, "
-              "libcurand, libcusolver. For instance, /opt/rocm/lib. "
+              "Specify path for loading rocm library, such as libhipblas, "
+              "libhipdnn, libhipsparse. For instance, /opt/rocm/lib. "
               "If default, dlopen will search rocm from LD_LIBRARY_PATH");
 
 DEFINE_string(rccl_dir, "",
@@ -264,8 +259,8 @@ void* GetCublasDsoHandle() {
 #elif defined(_WIN32) && defined(PADDLE_WITH_CUDA)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, win_cublas_lib, true,
                                     {cuda_lib_path});
-#elif PADDLE_WITH_HIP
-  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "librocblas.so");
+#elif defined(PADDLE_WITH_HIP)
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhipblas.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcublas.so");
 #endif
@@ -292,8 +287,8 @@ void* GetCUDNNDsoHandle() {
       "CUDNN version.");
   return GetDsoHandleFromSearchPath(FLAGS_cudnn_dir, win_cudnn_lib, true,
                                     {cuda_lib_path}, win_warn_meg);
-#elif PADDLE_WITH_HIP
-  return GetDsoHandleFromSearchPath(FLAGS_miopen_dir, "libMIOpen.so", false);
+#elif defined(PADDLE_WITH_HIP)
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhipdnn.so", false);
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cudnn_dir, "libcudnn.so", false,
                                     {cuda_lib_path});
@@ -316,7 +311,7 @@ void* GetCurandDsoHandle() {
 #elif defined(_WIN32) && defined(PADDLE_WITH_CUDA)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, win_curand_lib, true,
                                     {cuda_lib_path});
-#elif PADDLE_WITH_HIP
+#elif defined(PADDLE_WITH_HIP)
   return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhiprand.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcurand.so");
@@ -337,7 +332,7 @@ void* GetCusolverDsoHandle() {
 void* GetNVRTCDsoHandle() {
 #if defined(__APPLE__) || defined(__OSX__)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libnvrtc.dylib", false);
-#elif PADDLE_WITH_HIP
+#elif defined(PADDLE_WITH_HIP)
   return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhiprtc.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libnvrtc.so", false);
@@ -347,7 +342,7 @@ void* GetNVRTCDsoHandle() {
 void* GetCUDADsoHandle() {
 #if defined(__APPLE__) || defined(__OSX__)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcuda.dylib", false);
-#elif PADDLE_WITH_HIP
+#elif defined(PADDLE_WITH_HIP)
   return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhip_hcc.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcuda.so", false);

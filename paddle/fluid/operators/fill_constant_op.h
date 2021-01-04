@@ -108,7 +108,7 @@ class FillConstantKernel : public framework::OpKernel<T> {
       functor(reinterpret_cast<const platform::CPUDeviceContext &>(dev_ctx),
               tensor, static_cast<T>(value));
     }
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
     if (!cpu_place) {
       tensor->mutable_data(ctx.GetPlace(), data_type);
       math::SetConstant<platform::CUDADeviceContext, T> functor;

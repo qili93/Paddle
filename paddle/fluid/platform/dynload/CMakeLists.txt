@@ -3,7 +3,7 @@ cc_library(dynamic_loader SRCS dynamic_loader.cc DEPS glog gflags enforce)
 list(APPEND CUDA_SRCS cublas.cc cudnn.cc curand.cc cusolver.cc)
 #hip
 if (WITH_ROCM_PLATFORM)
-    list(APPEND HIP_SRCS rocblas.cc miopen.cc hiprand.cc)
+    list(APPEND HIP_SRCS hipblas.cc hipdnn.cc hiprand.cc)
 endif()
 
 # There is no macOS version of NCCL.

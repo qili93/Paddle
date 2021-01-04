@@ -14,11 +14,11 @@
 
 #pragma once
 
-#ifdef PADDLE_WITH_NCCL
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <nccl.h>
+// #include <cuda.h>
+// #include <cuda_runtime.h>
+// #include <nccl.h>
 #include <string>
 #include <utility>
 

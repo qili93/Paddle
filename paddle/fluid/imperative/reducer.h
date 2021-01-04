@@ -27,7 +27,7 @@
 #include "paddle/fluid/imperative/variable_wrapper.h"
 #include "paddle/fluid/memory/memory.h"
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/imperative/all_reduce.h"
 #include "paddle/fluid/operators/math/concat_and_split.h"
 #include "paddle/fluid/operators/strided_memcpy.h"
@@ -37,7 +37,7 @@
 namespace paddle {
 namespace imperative {
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 template <typename T>
 void ConcatTensorsForAllReduce(
     const platform::CUDADeviceContext& context,
@@ -185,8 +185,8 @@ class Reducer {
   // Following variables are to help sync stream
   std::vector<std::shared_ptr<platform::CudaEventObject>> group_events_;
   std::vector<std::shared_ptr<platform::CudaEventObject>> comm_events_;
-  cudaStream_t compute_stream_;
-  std::vector<cudaStream_t> comm_streams_;
+  gpuStream_t compute_stream_;
+  std::vector<gpuStream_t> comm_streams_;
   int nrings_ = 1;
 
   // Following variables are to help rebuild group

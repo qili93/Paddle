@@ -14,7 +14,7 @@
 #pragma once
 
 // network header files
-#if defined(PADDLE_WITH_CUDA) && !defined(_WIN32)
+#if (defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)) && !defined(_WIN32)
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -30,10 +30,14 @@
 #include "paddle/fluid/framework/variable.h"
 #include "paddle/fluid/platform/device_context.h"
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/imperative/all_reduce.h"
-#include "paddle/fluid/platform/dynload/nccl.h"
 #include "paddle/fluid/platform/nccl_helper.h"
+#if defined(PADDLE_WITH_NCCL)
+#include "paddle/fluid/platform/dynload/nccl.h"
+#else // PADDLE_WITH_RCCL
+#include "paddle/fluid/platform/dynload/rccl.h"
+#endif
 #endif
 
 #include "paddle/fluid/framework/lod_tensor.h"
@@ -68,7 +72,7 @@ class ParallelContext {
   virtual void AllReduceByStream(const framework::Variable& src,
                                  framework::Variable* dst, int ring_id = 0,
                                  bool use_calc_stream = false) = 0;
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
   virtual paddle::platform::CUDADeviceContext* GetDeviceContext(
       int ring_id) = 0;
 #endif
@@ -80,7 +84,7 @@ class ParallelContext {
   platform::Place place_;
 };
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 class NCCLParallelContext : public ParallelContext {
  public:
   explicit NCCLParallelContext(const ParallelStrategy& strategy,

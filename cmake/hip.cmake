@@ -4,9 +4,8 @@ endif()
 
 include_directories("${ROCM_PATH}/include")
 include_directories("${ROCM_PATH}/hip/include")
-include_directories("${ROCM_PATH}/miopen/include")
+include_directories("${ROCM_PATH}/hipdnn/include")
 include_directories("${ROCM_PATH}/hipblas/include")
-include_directories("${ROCM_PATH}/rocblas/include")
 include_directories("${ROCM_PATH}/hiprand/include")
 include_directories("${ROCM_PATH}/rocrand/include")
 include_directories("${ROCM_PATH}/rccl/include")
@@ -49,10 +48,6 @@ endif(WITH_DISTRIBUTE)
 if(WITH_GRPC)
   set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DPADDLE_WITH_GRPC")
 endif(WITH_GRPC)
-
-if(WITH_MKLDNN)
-  set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DPADDLE_WITH_MKLDNN")
-endif(WITH_MKLDNN)
 
 set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DANY_IMPL_ANY_CAST_MOVEABLE")
 

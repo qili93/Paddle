@@ -16,7 +16,7 @@
 
 namespace paddle {
 namespace imperative {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 void NCCLParallelContext::RecvNCCLID(
     const std::string &ep,
     std::vector<ncclUniqueId> &nccl_ids) {  // NOLINT

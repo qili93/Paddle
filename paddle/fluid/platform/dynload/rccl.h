@@ -55,7 +55,8 @@ extern void* rccl_dso_handle;
   __macro(ncclGroupEnd);                \
   __macro(ncclReduce);                  \
   __macro(ncclReduceScatter);           \
-  __macro(ncclGetErrorString);
+  __macro(ncclGetErrorString);          \
+  __macro(ncclBroadcast);
 
 RCCL_RAND_ROUTINE_EACH(DECLARE_DYNAMIC_LOAD_RCCL_WRAP)
 
