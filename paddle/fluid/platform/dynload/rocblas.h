@@ -51,18 +51,26 @@ extern void *rocblas_dso_handle;
   extern DynLoad__##__name __name
 
 #define ROCBLAS_BLAS_ROUTINE_EACH(__macro) \
+  __macro(rocblas_caxpy);                  \
   __macro(rocblas_saxpy);                  \
   __macro(rocblas_daxpy);                  \
+  __macro(rocblas_zaxpy);                  \
   __macro(rocblas_sscal);                  \
   __macro(rocblas_dscal);                  \
   __macro(rocblas_scopy);                  \
   __macro(rocblas_dcopy);                  \
+  __macro(rocblas_cgemv);                  \
   __macro(rocblas_sgemv);                  \
+  __macro(rocblas_zgemv);                  \
   __macro(rocblas_dgemv);                  \
+  __macro(rocblas_cgemm);                  \
   __macro(rocblas_sgemm);                  \
   __macro(rocblas_dgemm);                  \
   __macro(rocblas_hgemm);                  \
+  __macro(rocblas_zgemm);                  \
   __macro(rocblas_sgeam);                  \
+  __macro(rocblas_strsm);                  \
+  __macro(rocblas_dtrsm);                  \
   __macro(rocblas_dgeam);                  \
   __macro(rocblas_sgemm_batched);          \
   __macro(rocblas_dgemm_batched);          \
