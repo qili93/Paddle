@@ -24,7 +24,6 @@ TEST(Device, Init) {
   using paddle::platform::CUDAPlace;
 
   int count = paddle::platform::GetCUDADeviceCount();
-  std::cout << "GetCUDADeviceCount = " << count << std::endl;
   for (int i = 0; i < count; i++) {
     CUDADeviceContext* device_context = new CUDADeviceContext(CUDAPlace(i));
     Eigen::GpuDevice* gpu_device = device_context->eigen_device();

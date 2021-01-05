@@ -111,14 +111,8 @@ class CublasHandleHolder {
 
 #ifdef PADDLE_WITH_HIP
   explicit CublasHandleHolder(gpuStream_t stream) {
-    std::cout << "CublasHandleHolder start..." << std::endl;
-    rocblas_status status = dynload::rocblas_create_handle(&handle_);
-    std::cout << "rocblas_status = " << status << std::endl;
-
     PADDLE_RETRY_CUDA_SUCCESS(dynload::rocblas_create_handle(&handle_));
-    std::cout << "rocblas_create_handle finish..." << std::endl;
     PADDLE_RETRY_CUDA_SUCCESS(dynload::rocblas_set_stream(handle_, stream));
-    std::cout << "rocblas_set_stream finish..." << std::endl;
   }
 #endif
 

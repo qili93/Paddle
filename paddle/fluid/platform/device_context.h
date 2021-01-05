@@ -261,9 +261,7 @@ class CUDAContext {
 
 #ifdef PADDLE_WITH_HIP
   void InitCuBlasContext() {
-    std::cout << "InitCuBlasContext start ..." << std::endl;
     cublas_handle_.reset(new CublasHandleHolder(RawStream()));
-    std::cout << "InitCuBlasContext finish ..." << std::endl;
   }
 #endif
 
