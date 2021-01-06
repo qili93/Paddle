@@ -20,7 +20,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/lod_tensor.h"
 #include "paddle/fluid/framework/op_registry.h"
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/platform/nccl_helper.h"
 #endif
 
@@ -39,7 +39,7 @@ class NCCLBroadcastOpKernel : public framework::OpKernel<T> {
         platform::errors::PreconditionNotMet(
             "The place of ExecutionContext should be CUDAPlace."));
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
     int dev_id = BOOST_GET_CONST(platform::CUDAPlace, ctx.GetPlace()).device;
     int root_dev_id = ctx.Attr<int>("root");
 

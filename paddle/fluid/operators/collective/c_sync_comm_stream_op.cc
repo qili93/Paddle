@@ -20,7 +20,7 @@ namespace framework {
 class Scope;
 }  // namespace framework
 }  // namespace paddle
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 #include "paddle/fluid/platform/collective_helper.h"
 #endif
 
@@ -41,7 +41,7 @@ class CSyncCommStreamOp : public framework::OperatorBase {
                       platform::errors::PreconditionNotMet(
                           "Sync stream op can run on gpu place only for now."));
 
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
     int ring_id = Attr<int>("ring_id");
     auto stream =
         platform::NCCLCommContext::Instance().Get(ring_id, place)->stream();

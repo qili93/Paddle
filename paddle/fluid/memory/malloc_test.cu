@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifdef PADDLE_WITH_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
+
+#ifdef PADDLE_WITH_HIP
+#include <hip/hip_runtime.h>
+#endif
+
 #include <thread>  // NOLINT
 #include <vector>
 
@@ -40,8 +47,13 @@ __global__ void kernel(float *x, int n) {
 void CheckKernelOutput(float *x, int n) {
   auto host_x = std::unique_ptr<float[]>(new float[n]);
   for (int i = 0; i < n; ++i) {
+#ifdef PADDLE_WITH_CUDA
     EXPECT_TRUE(cudaSuccess == cudaMemcpy(host_x.get(), x, n * sizeof(float),
                                           cudaMemcpyDeviceToHost));
+#elif defined(PADDLE_WITH_HIP)
+    EXPECT_TRUE(hipSuccess == hipMemcpy(host_x.get(), x, n * sizeof(float),
+                                        hipMemcpyDeviceToHost));
+#endif
     EXPECT_GE(host_x[i] + DELTA, 3.14159f * i);
     EXPECT_LE(host_x[i] - DELTA, 3.14159f * i);
   }
@@ -53,18 +65,31 @@ void MultiStreamCompute(float **data, float **second_data,
   AllocationPtr allocation_ptr = Alloc(ctx, N * sizeof(float));
   EXPECT_GE(allocation_ptr->size(), N * sizeof(float));
   *data = reinterpret_cast<float *>(allocation_ptr->ptr());
+#ifdef PADDLE_WITH_CUDA
   kernel<<<1, 64, 0, ctx.stream()>>>(*data, N);
+#elif defined(PADDLE_WITH_HIP)
+  hipLaunchKernelGGL((kernel), dim3(1), dim3(64), 0, ctx.stream(), *data, N);
+#endif
 
   // allocate and compute on same stream again
   allocation_ptr = Alloc(ctx, N * sizeof(float));
   EXPECT_GE(allocation_ptr->size(), N * sizeof(float));
   *second_data = reinterpret_cast<float *>(allocation_ptr->ptr());
+#ifdef PADDLE_WITH_CUDA
   kernel<<<1, 64, 0, ctx.stream()>>>(*second_data, N);
+#elif defined(PADDLE_WITH_HIP)
+  hipLaunchKernelGGL((kernel), dim3(1), dim3(64), 0, ctx.stream(), *second_data,
+                     N);
+#endif
 }
 
 TEST(Malloc, CUDADeviceContextMultiStream) {
   auto place = platform::CUDAPlace(0);
+#ifdef PADDLE_WITH_CUDA
   EXPECT_TRUE(cudaSuccess == cudaSetDevice(0));
+#elif defined(PADDLE_WITH_HIP)
+  EXPECT_TRUE(hipSuccess == hipSetDevice(0));
+#endif
 
   AllocationPtr main_stream_alloc_ptr = Alloc(place, N * sizeof(float));
   EXPECT_GE(main_stream_alloc_ptr->size(), N * sizeof(float));
@@ -75,8 +100,12 @@ TEST(Malloc, CUDADeviceContextMultiStream) {
   float *second_data[NUM_STREAMS];
   CudaDevCtxVec dev_ctx;
 
-  // default stream
+// default stream
+#ifdef PADDLE_WITH_CUDA
   kernel<<<1, 64>>>(main_stream_data, N);
+#elif defined(PADDLE_WITH_HIP)
+  hipLaunchKernelGGL((kernel), dim3(1), dim3(64), 0, 0, main_stream_data, N);
+#endif
   main_stream_alloc_ptr.reset();
 
   for (int i = 0; i < NUM_STREAMS; ++i) {
@@ -85,7 +114,11 @@ TEST(Malloc, CUDADeviceContextMultiStream) {
     MultiStreamCompute(&data[i], &second_data[i], *dev_ctx[i]);
   }
 
+#ifdef PADDLE_WITH_CUDA
   EXPECT_TRUE(cudaSuccess == cudaDeviceSynchronize());
+#elif defined(PADDLE_WITH_HIP)
+  EXPECT_TRUE(hipSuccess == hipDeviceSynchronize());
+#endif
   for (int i = 0; i < NUM_STREAMS; ++i) {
     CheckKernelOutput(data[i], N);
     CheckKernelOutput(second_data[i], N);
@@ -94,7 +127,11 @@ TEST(Malloc, CUDADeviceContextMultiStream) {
 
 TEST(Malloc, CUDADeviceContextMultiThreadMultiStream) {
   auto place = platform::CUDAPlace(0);
+#ifdef PADDLE_WITH_CUDA
   EXPECT_TRUE(cudaSuccess == cudaSetDevice(0));
+#elif defined(PADDLE_WITH_HIP)
+  EXPECT_TRUE(hipSuccess == hipSetDevice(0));
+#endif
 
   AllocationPtr main_stream_alloc_ptr = Alloc(place, N * sizeof(float));
   EXPECT_GE(main_stream_alloc_ptr->size(), N * sizeof(float));
@@ -106,8 +143,12 @@ TEST(Malloc, CUDADeviceContextMultiThreadMultiStream) {
   CudaDevCtxVec dev_ctx;
   std::vector<std::thread> threads;
 
-  // default stream
+// default stream
+#ifdef PADDLE_WITH_CUDA
   kernel<<<1, 64>>>(main_stream_data, N);
+#elif defined(PADDLE_WITH_HIP)
+  hipLaunchKernelGGL((kernel), dim3(1), dim3(64), 0, 0, main_stream_data, N);
+#endif
   main_stream_alloc_ptr.reset();
 
   for (int i = 0; i < NUM_STREAMS; ++i) {
@@ -120,8 +161,11 @@ TEST(Malloc, CUDADeviceContextMultiThreadMultiStream) {
   for (int i = 0; i < NUM_STREAMS; ++i) {
     threads[i].join();
   }
-
+#ifdef PADDLE_WITH_CUDA
   EXPECT_TRUE(cudaSuccess == cudaDeviceSynchronize());
+#elif defined(PADDLE_WITH_HIP)
+  EXPECT_TRUE(hipSuccess == hipDeviceSynchronize());
+#endif
   for (int i = 0; i < NUM_STREAMS; ++i) {
     CheckKernelOutput(data[i], N);
     CheckKernelOutput(second_data[i], N);

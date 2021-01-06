@@ -51,28 +51,28 @@ class CUDAStream final {
   }
 
   template <typename Callback>
-  void RecordEvent(cudaEvent_t ev, Callback callback) const {
+  void RecordEvent(gpuEvent_t ev, Callback callback) const {
     callback();
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventRecord(ev, stream_));
   }
 
-  void RecordEvent(cudaEvent_t ev) const {
+  void RecordEvent(gpuEvent_t ev) const {
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaEventRecord(ev, stream_));
   }
 
-  void WaitEvent(cudaEvent_t ev) const {
+  void WaitEvent(gpuEvent_t ev) const {
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamWaitEvent(stream_, ev, 0));
   }
 
   void Wait() const;
   void WaitCallback() const { callback_manager_->Wait(); }
 
-  const cudaStream_t& raw_stream() const { return stream_; }
+  const gpuStream_t& raw_stream() const { return stream_; }
   void Destroy();
 
  private:
   Place place_;
-  cudaStream_t stream_{nullptr};
+  gpuStream_t stream_{nullptr};
   Priority priority_{Priority::kNormal};
   std::unique_ptr<StreamCallbackManager> callback_manager_;
 

@@ -48,14 +48,9 @@ DEFINE_string(op_dir, "", "Specify path for loading user-defined op library.");
 
 #ifdef PADDLE_WITH_HIP
 
-DEFINE_string(miopen_dir, "",
-              "Specify path for loading libMIOpen.so. For instance, "
-              "/opt/rocm/miopen/lib. If empty [default], dlopen "
-              "will search miopen from LD_LIBRARY_PATH");
-
 DEFINE_string(rocm_dir, "",
               "Specify path for loading rocm library, such as librocblas, "
-              "libcurand, libcusolver. For instance, /opt/rocm/lib. "
+              "libmiopen, libhipsparse. For instance, /opt/rocm/lib. "
               "If default, dlopen will search rocm from LD_LIBRARY_PATH");
 
 DEFINE_string(rccl_dir, "",
@@ -264,7 +259,7 @@ void* GetCublasDsoHandle() {
 #elif defined(_WIN32) && defined(PADDLE_WITH_CUDA)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, win_cublas_lib, true,
                                     {cuda_lib_path});
-#elif PADDLE_WITH_HIP
+#elif defined(PADDLE_WITH_HIP)
   return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "librocblas.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcublas.so");
@@ -292,8 +287,8 @@ void* GetCUDNNDsoHandle() {
       "CUDNN version.");
   return GetDsoHandleFromSearchPath(FLAGS_cudnn_dir, win_cudnn_lib, true,
                                     {cuda_lib_path}, win_warn_meg);
-#elif PADDLE_WITH_HIP
-  return GetDsoHandleFromSearchPath(FLAGS_miopen_dir, "libMIOpen.so", false);
+#elif defined(PADDLE_WITH_HIP)
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libMIOpen.so", false);
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cudnn_dir, "libcudnn.so", false,
                                     {cuda_lib_path});
@@ -316,7 +311,7 @@ void* GetCurandDsoHandle() {
 #elif defined(_WIN32) && defined(PADDLE_WITH_CUDA)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, win_curand_lib, true,
                                     {cuda_lib_path});
-#elif PADDLE_WITH_HIP
+#elif defined(PADDLE_WITH_HIP)
   return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhiprand.so");
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcurand.so");
@@ -337,8 +332,8 @@ void* GetCusolverDsoHandle() {
 void* GetNVRTCDsoHandle() {
 #if defined(__APPLE__) || defined(__OSX__)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libnvrtc.dylib", false);
-#elif PADDLE_WITH_HIP
-  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhiprtc.so");
+#elif defined(PADDLE_WITH_HIP)
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhiprtc.so", false);
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libnvrtc.so", false);
 #endif
@@ -347,8 +342,8 @@ void* GetNVRTCDsoHandle() {
 void* GetCUDADsoHandle() {
 #if defined(__APPLE__) || defined(__OSX__)
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcuda.dylib", false);
-#elif PADDLE_WITH_HIP
-  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhip_hcc.so");
+#elif defined(PADDLE_WITH_HIP)
+  return GetDsoHandleFromSearchPath(FLAGS_rocm_dir, "libhip_hcc.so", false);
 #else
   return GetDsoHandleFromSearchPath(FLAGS_cuda_dir, "libcuda.so", false);
 #endif
@@ -369,15 +364,24 @@ void* GetWarpCTCDsoHandle() {
 }
 
 void* GetNCCLDsoHandle() {
+#ifdef PADDLE_WITH_HIP
+  std::string warning_msg(
+      "You may need to install 'rccl' from ROCM official website: "
+      "https://rocmdocs.amd.com/en/latest/Installation_Guide/Installation-Guide.html"
+      "before install PaddlePaddle.");
+#else
   std::string warning_msg(
       "You may need to install 'nccl2' from NVIDIA official website: "
       "https://developer.nvidia.com/nccl/nccl-download"
       "before install PaddlePaddle.");
-#if defined(__APPLE__) || defined(__OSX__)
+#endif
+
+#if (defined(__APPLE__) || defined(__OSX__))
   return GetDsoHandleFromSearchPath(FLAGS_nccl_dir, "libnccl.dylib", true, {},
                                     warning_msg);
 #elif defined(PADDLE_WITH_HIP) && defined(PADDLE_WITH_RCCL)
-  return GetDsoHandleFromSearchPath(FLAGS_rccl_dir, "librccl.so", true);
+  return GetDsoHandleFromSearchPath(FLAGS_rccl_dir, "librccl.so", true, {},
+                                    warning_msg);
 #else
   return GetDsoHandleFromSearchPath(FLAGS_nccl_dir, "libnccl.so", true, {},
                                     warning_msg);
