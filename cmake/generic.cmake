@@ -652,28 +652,23 @@ function(hip_binary TARGET_NAME)
 endfunction(hip_binary)
 
 function(hip_test TARGET_NAME)
-  if (WITH_ROCM_PLATFORM AND WITH_TESTING)
-    set(options "")
+  # The environment variable `CI_SKIP_CPP_TEST` is used to skip the compilation
+  # and execution of test in CI. `CI_SKIP_CPP_TEST` is set to ON when no files
+  # other than *.py are modified.
+  if (WITH_ROCM_PLATFROM AND WITH_TESTING AND NOT "$ENV{CI_SKIP_CPP_TEST}" STREQUAL "ON")
     set(oneValueArgs "")
     set(multiValueArgs SRCS DEPS)
     cmake_parse_arguments(hip_test "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-    set(_sources ${hip_test_SRCS})
-    set_source_files_properties(${_sources} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
-    HIP_PREPARE_TARGET_COMMANDS(${TARGET_NAME} OBJ _generated_files _source_files ${_sources} HIPCC_OPTIONS ${_hipcc_options} HCC_OPTIONS ${_hcc_options} NVCC_OPTIONS ${_nvcc_options})
-    if(_source_files)
-      list(REMOVE_ITEM _sources ${_source_files})
-    endif()
-    add_executable(${TARGET_NAME} ${_cmake_options} ${_generated_files} ${_sources})
-    set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE HIP)
+    add_executable(${TARGET_NAME} ${hip_test_SRCS})
     get_property(os_dependency_modules GLOBAL PROPERTY OS_DEPENDENCY_MODULES)
-    target_link_libraries(${TARGET_NAME} ${hip_test_DEPS} paddle_gtest_main memory gtest gflags ${os_dependency_modules})
-    add_dependencies(${TARGET_NAME} ${hip_test_DEPS} paddle_gtest_main memory gtest gflags)
+    target_link_libraries(${TARGET_NAME} ${hip_test_DEPS} paddle_gtest_main lod_tensor memory gtest gflags glog ${os_dependency_modules})
+    add_dependencies(${TARGET_NAME} ${hip_test_DEPS} paddle_gtest_main lod_tensor memory gtest gflags glog)
     common_link(${TARGET_NAME})
     add_test(${TARGET_NAME} ${TARGET_NAME})
+    set_property(TEST ${TARGET_NAME} PROPERTY ENVIRONMENT FLAGS_cpu_deterministic=true)
+    set_property(TEST ${TARGET_NAME} PROPERTY ENVIRONMENT FLAGS_init_allocated_mem=true)
+    set_property(TEST ${TARGET_NAME} PROPERTY ENVIRONMENT FLAGS_cudnn_deterministic=true)
   endif()
-
-  check_coverage_opt(${TARGET_NAME} ${hip_test_SRCS})
-
 endfunction(hip_test)
 
 function(go_library TARGET_NAME)
