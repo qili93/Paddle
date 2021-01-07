@@ -237,11 +237,12 @@ bool CUDADeviceCode::Compile(bool include_path) {
   auto* dev_ctx = reinterpret_cast<CUDADeviceContext*>(
       DeviceContextPool::Instance().Get(place_));
   int compute_capability = dev_ctx->GetComputeCapability();
-  std::string compute_flag =
-      "--gpu-architecture=compute_" + std::to_string(compute_capability);
-  std::vector<const char*> options = {"--std=c++11", compute_flag.c_str()};
+  std::cout << "======= compute_capability is " << compute_capability << std::endl;
+  std::vector<const char*> options = {"-std=c++11", "--amdgpu-target=gfx906"};
+  std::cout << "======= include_path is " << include_path << std::endl;
   if (include_path) {
     std::string cuda_include_path = FindCUDAIncludePath();
+    std::cout << "==================== cuda_include_path is " << cuda_include_path << std::endl;
     if (!cuda_include_path.empty()) {
       std::string include_option = "--include-path=" + cuda_include_path;
       options.push_back(include_option.c_str());

@@ -131,7 +131,11 @@ int GetCUDAComputeCapability(int id) {
 #endif
   PADDLE_ENFORCE_CUDA_SUCCESS(major_error_code);
   PADDLE_ENFORCE_CUDA_SUCCESS(minor_error_code);
+#ifdef PADDLE_WITH_HIP
+  return major * 100 + minor;
+#else
   return major * 10 + minor;
+#endif
 }
 
 dim3 GetGpuMaxGridDimSize(int id) {
