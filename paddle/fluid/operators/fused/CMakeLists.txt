@@ -20,28 +20,28 @@ register_operators(EXCLUDES
 op_library(fusion_gru_op)
 file(APPEND ${pybind_file} "USE_CPU_ONLY_OP(fusion_gru);\n")
 
-if (WITH_GPU OR WITH_ROCM_PLATFORM)
+if (WITH_GPU OR WITH_ROCM)
     # fused_bn_activation_op needs cudnn 7.4.1 above
     # HIP not support bn act fuse in MIOPEN
-    if ((NOT WITH_ROCM_PLATFORM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7401))
+    if ((NOT WITH_ROCM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7401))
         op_library(fused_bn_activation_op)
         file(APPEND ${pybind_file} "USE_CUDA_ONLY_OP(fused_batch_norm_act);\n")
     endif()
     # conv_fusion_op needs cudnn 7 above
     # HIP not support cudnnConvolutionBiasActivationForward
-    if ((NOT WITH_ROCM_PLATFORM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7100))
+    if ((NOT WITH_ROCM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7100))
         op_library(conv_fusion_op)
         file(APPEND ${pybind_file} "USE_CUDA_ONLY_OP(conv2d_fusion);\n")
     endif()
     # fusion_transpose_flatten_concat_op
     # HIP not support cudnnTransformTensor
-    if(NOT WITH_ROCM_PLATFORM)
+    if(NOT WITH_ROCM)
         op_library(fusion_transpose_flatten_concat_op)
         file(APPEND ${pybind_file} "USE_CUDA_ONLY_OP(fusion_transpose_flatten_concat);\n")
     endif()
     # fusion_conv_inception_op needs cudnn 7 above
     # HIP not support cudnnConvolutionBiasActivationForward
-    if ((NOT WITH_ROCM_PLATFORM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7100))
+    if ((NOT WITH_ROCM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7100))
         op_library(fusion_conv_inception_op)
         file(APPEND ${pybind_file} "USE_CUDA_ONLY_OP(conv2d_inception_fusion);\n")
     endif()
@@ -63,7 +63,7 @@ if (WITH_GPU OR WITH_ROCM_PLATFORM)
     endif()
     # fused_bn_add_activation
     # HIP not support bn act fuse in MIOPEN
-    if ((NOT WITH_ROCM_PLATFORM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7401))
+    if ((NOT WITH_ROCM) AND (NOT ${CUDNN_VERSION} VERSION_LESS 7401))
         op_library(fused_bn_add_activation_op)
         file(APPEND ${pybind_file} "USE_CUDA_ONLY_OP(fused_bn_add_activation);\n")
     endif()

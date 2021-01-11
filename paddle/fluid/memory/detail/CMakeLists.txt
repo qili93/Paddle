@@ -4,7 +4,7 @@ cc_library(memory_block SRCS memory_block.cc memory_block_desc.cc meta_cache.cc 
 
 if(WITH_GPU)
   nv_library(system_allocator SRCS system_allocator.cc DEPS gflags cpu_info gpu_info place)
-elseif(WITH_ROCM_PLATFORM)
+elseif(WITH_ROCM)
   hip_library(system_allocator SRCS system_allocator.cc DEPS gflags cpu_info gpu_info place)
 else()
   cc_library(system_allocator SRCS system_allocator.cc DEPS gflags cpu_info place)
@@ -16,7 +16,7 @@ cc_library(buddy_allocator SRCS buddy_allocator.cc DEPS memory_block system_allo
 
 if(WITH_GPU)
   cc_test(buddy_allocator_test SRCS buddy_allocator_test.cc DEPS buddy_allocator)
-elseif(WITH_ROCM_PLATFORM)
+elseif(WITH_ROCM)
   hip_test(buddy_allocator_test SRCS buddy_allocator_test.cc DEPS buddy_allocator)
 endif()
 

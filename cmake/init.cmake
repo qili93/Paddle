@@ -21,7 +21,7 @@ else()
     set(WIN_PROPS ${CMAKE_SOURCE_DIR}/cmake/paddle_win.props)
 endif()
 
-if(WITH_GPU)
+if(WITH_GPU OR WITH_ROCM)
     set(CMAKE_CUDA_FLAGS_DEBUG "-g")
     set(CMAKE_CUDA_FLAGS_RELEASE "-O3 -DNDEBUG")
     set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")

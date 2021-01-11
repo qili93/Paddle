@@ -421,7 +421,7 @@ DEVICE inline half operator-(const half& a) {
 #endif
 }
 
-#ifndef PADDLE_WITH_HIP
+#ifndef PADDLE_WITH_HIP // not defined __HIP_NO_HALF_OPERATORS__
 DEVICE inline half& operator+=(half& a, const half& b) {  // NOLINT
   a = a + b;
   return a;

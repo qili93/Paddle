@@ -78,7 +78,7 @@ DeviceCodePool::DeviceCodePool(const std::vector<platform::Place>& places) {
 #else
       PADDLE_THROW(platform::errors::PreconditionNotMet(
           "CUDAPlace or HIPPlace is not supported, please re-compile with "
-          "WITH_GPU=ON or WITH_ROCM_PLATFORM=ON."));
+          "WITH_GPU=ON or WITH_ROCM=ON."));
 #endif
     }
   }

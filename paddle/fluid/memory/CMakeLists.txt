@@ -19,7 +19,7 @@ if (WITH_GPU)
             DEPS device_context malloc)
 endif()
 
-if (WITH_ROCM_PLATFORM)
+if (WITH_ROCM)
     hip_test(malloc_test
             SRCS malloc_test.cu
             DEPS device_context malloc)

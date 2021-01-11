@@ -167,7 +167,7 @@ void DataFeed::CopyToFeedTensor(void* dst, const void* src, size_t size) {
 #else
     PADDLE_THROW(platform::errors::Unimplemented(
         "Not supported GPU/ROCM, please compile with option WITH_GPU=ON or "
-        "WITH_ROCM_PLATFORM=ON."));
+        "WITH_ROCM=ON."));
 #endif
   }
 }

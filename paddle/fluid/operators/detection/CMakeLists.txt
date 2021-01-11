@@ -40,7 +40,7 @@ detection_library(box_decoder_and_assign_op SRCS box_decoder_and_assign_op.cc bo
 detection_library(sigmoid_focal_loss_op SRCS sigmoid_focal_loss_op.cc sigmoid_focal_loss_op.cu)
 detection_library(retinanet_detection_output_op SRCS retinanet_detection_output_op.cc)
 
-if(WITH_GPU OR WITH_ROCM_PLATFORM)
+if(WITH_GPU OR WITH_ROCM)
   set(TMPDEPS memory)
   if(WITH_GPU)
     if (${CMAKE_CUDA_COMPILER_VERSION} LESS 11.0)

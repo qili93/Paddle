@@ -1,4 +1,4 @@
-if (WITH_ROCM_PLATFORM)
+if (WITH_ROCM)
     hip_library(relu_op_shared SHARED SRCS relu_op.cc relu_op.cu DEPS paddle_framework_shared)
 elseif (WITH_GPU)
     nv_library(relu_op_shared SHARED SRCS relu_op.cc relu_op.cu DEPS paddle_framework_shared)

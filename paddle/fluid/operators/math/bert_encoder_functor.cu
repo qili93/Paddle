@@ -236,7 +236,7 @@ template <>
 __global__ void EmbEltwiseLayernormKernel<half, 256>(
     int hidden, const int64_t *ids, const float *scale, const float *bias,
     const int64_t *embs, half *output, float eps, int input_num) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   cub::Sum pair_sum;
   // blockIdx.x: position in the sequence
   // blockIdx.y: batch
@@ -330,7 +330,7 @@ template <>
 __global__ void SoftmaxKernelWithEltadd<half>(
     half *qk_buf_, const half *bias_qk_, const int batch_size,
     const int head_num, const int seq_len, const unsigned mask) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   int qk_offset = blockIdx.x * seq_len;
   assert(blockDim.x % 32 == 0);
 
@@ -378,7 +378,7 @@ __global__ void SoftmaxKernelWithEltadd2<half2>(
     half2 *qk_buf_, const half2 *bias_qk_, const int batch_size,
     const int head_num, const int seq_len, const unsigned mask) {
 // operator "+" of half only suppotted after cuda version 10.0
-#if defined(__HIP_PLATFORM_HCC__) || (CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000)
+#if defined(__HIP_DEVICE_COMPILE__) || (CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000)
   int qk_offset = blockIdx.x * seq_len;
   int idx = threadIdx.x;
   assert(blockDim.x % 32 == 0);
@@ -539,7 +539,7 @@ template <>
 __global__ void SkipLayerNormSmallKernel<half, 32>(
     int num, int hidden, const half *input1, const half *input2, half *output,
     const float *scale, const float *bias, float eps) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   const half rld = __int2half_rn(1) / __int2half_rn(hidden);
   const int offset = blockIdx.x * hidden;
   cub::Sum pair_sum;
@@ -560,7 +560,7 @@ template <>
 __global__ void SkipLayerNormSmallKernel<half, 128>(
     int num, int hidden, const half *input1, const half *input2, half *output,
     const float *scale, const float *bias, float eps) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   const half rld = __int2half_rn(1) / __int2half_rn(hidden);
   const int offset = blockIdx.x * hidden;
   cub::Sum pair_sum;
@@ -581,7 +581,7 @@ template <>
 __global__ void SkipLayerNormSmallKernel<half, 384>(
     int num, int hidden, const half *input1, const half *input2, half *output,
     const float *scale, const float *bias, float eps) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   const half rld = __int2half_rn(1) / __int2half_rn(hidden);
   const int offset = blockIdx.x * hidden;
   cub::Sum pair_sum;
@@ -624,7 +624,7 @@ __global__ void SkipLayerNormKernel<half, 256>(int num, int hidden,
                                                const half *input2, half *output,
                                                const float *scale,
                                                const float *bias, float eps) {
-#if defined(__HIP_PLATFORM_HCC__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__) || CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__)
   const half rld = __int2half_rn(1) / __int2half_rn(hidden);
   const int offset = blockIdx.x * hidden;
   cub::Sum pair_sum;
@@ -667,7 +667,7 @@ __global__ void SkipLayerNormKernel2<half, half2, 256>(
     int num, int hidden, const half2 *input1, const half2 *input2,
     half2 *output, const float2 *scale, const float2 *bias, float eps) {
 // operator "+" of half only suppotted after cuda version 10.0
-#if defined(__HIP_PLATFORM_HCC__) || (CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000)
+#if defined(__HIP_DEVICE_COMPILE__) || (CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000)
   const half rld = __float2half(0.5f / hidden);  // because hidden is hidden/2
   const int offset = blockIdx.x * hidden;
   cub::Sum pair_sum;

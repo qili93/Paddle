@@ -70,8 +70,8 @@ register_operators(EXCLUDES py_func_op warpctc_op dgc_op lstm_op run_program_op 
 
 op_library(run_program_op SRCS run_program_op.cc run_program_op.cu.cc DEPS executor_cache ${OP_HEADER_DEPS})
 
-if (WITH_GPU OR WITH_ROCM_PLATFORM)
-    if(WITH_ROCM_PLATFORM)
+if (WITH_GPU OR WITH_ROCM)
+    if(WITH_ROCM)
         op_library(warpctc_op DEPS dynload_warpctc sequence_padding sequence_scale SRCS warpctc_op.cc warpctc_op.cu.cc)
     # warpctc_op needs cudnn 7 above
     elseif(${CUDNN_MAJOR_VERSION} VERSION_LESS 7)
@@ -107,7 +107,7 @@ set(COMMON_OP_DEPS ${COMMON_OP_DEPS} sequence_padding sequence_scale cos_sim_fun
 set(COMMON_OP_DEPS ${COMMON_OP_DEPS} sequence2batch lstm_compute matrix_bit_code gru_compute activation_functions beam_search fc matrix_inverse)
 set(COMMON_OP_DEPS ${COMMON_OP_DEPS} box_wrapper boost)
 set(COMMON_OP_DEPS ${COMMON_OP_DEPS} common_infer_shape_functions)
-if (WITH_GPU OR WITH_ROCM_PLATFORM)
+if (WITH_GPU OR WITH_ROCM)
   set(COMMON_OP_DEPS ${COMMON_OP_DEPS} depthwise_conv prelu bert_encoder_functor)
 endif()
 set(COMMON_OP_DEPS ${COMMON_OP_DEPS} device_memory_aligment)

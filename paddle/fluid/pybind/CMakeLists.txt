@@ -153,7 +153,7 @@ if(WITH_PYTHON)
     target_link_libraries(paddle_pybind rt)
   endif(NOT APPLE AND NOT WIN32)
 
-  # if(WITH_ROCM_PLATFORM)
+  # if(WITH_ROCM)
   #   cc_library(paddle_pybind SHARED
   #     SRCS ${PYBIND_SRCS}
   #     DEPS ${PYBIND_DEPS}
@@ -166,7 +166,7 @@ if(WITH_PYTHON)
   #   if(NOT APPLE AND NOT WIN32)
   #     target_link_libraries(paddle_pybind rt)
   #   endif(NOT APPLE AND NOT WIN32)
-  # endif(WITH_ROCM_PLATFORM)
+  # endif(WITH_ROCM)
 
   get_property (os_dependency_modules GLOBAL PROPERTY OS_DEPENDENCY_MODULES)
   target_link_libraries(paddle_pybind ${os_dependency_modules})

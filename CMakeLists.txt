@@ -148,7 +148,7 @@ option(WITH_DISTRIBUTE  "Compile with distributed support"              OFF)
 option(WITH_BRPC_RDMA     "Use brpc rdma as the rpc protocal"           OFF)
 option(ON_INFER         "Turn on inference optimization and inference-lib generation" OFF)
 ################################ Internal Configurations #######################################
-option(WITH_ROCM_PLATFORM     "Compile PaddlePaddle with ROCM platform"             OFF)
+option(WITH_ROCM     "Compile PaddlePaddle with ROCM platform"             OFF)
 option(WITH_RCCL              "Compile PaddlePaddle with RCCL support"              OFF)
 option(WITH_NV_JETSON     "Compile PaddlePaddle with NV JETSON"             OFF)
 option(WITH_PROFILER    "Compile PaddlePaddle with GPU profiler and gperftools"        OFF)
@@ -278,21 +278,11 @@ include(configure)          # add paddle env configuration
 
 include_directories("${PADDLE_SOURCE_DIR}")
 
-if(NOT DEFINED ENV{ROCM_PATH})
-    set(ROCM_PATH "/opt/rocm" CACHE PATH "Path to which ROCm has been installed")
-    set(HIP_PATH ${ROCM_PATH}/hip CACHE PATH "Path to which HIP has been installed")
-else()
-    set(ROCM_PATH $ENV{ROCM_PATH} CACHE PATH "Path to which ROCm has been installed")
-    set(HIP_PATH ${ROCM_PATH}/hip CACHE PATH "Path to which HIP has been installed")
-endif()
-set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
-
-if(WITH_ROCM_PLATFORM)
-    find_package(HIP)
+if(WITH_ROCM)
     include(hip)
-endif(WITH_ROCM_PLATFORM)
+endif(WITH_ROCM)
 
-if (NOT WITH_ROCM_PLATFORM AND WITH_RCCL)
+if (NOT WITH_ROCM AND WITH_RCCL)
     MESSAGE(WARNING
         "Disable RCCL when compiling without GPU. Force WITH_RCCL=OFF.")
     set(WITH_NCCL OFF CACHE STRING
@@ -302,7 +292,7 @@ endif()
 if(WITH_RCCL)
      add_definitions("-DPADDLE_WITH_RCCL")
 else()
-     if(WITH_ROCM_PLATFORM)
+     if(WITH_ROCM)
          MESSAGE(WARNING "If the environment is multi-card, the WITH_RCCL option needs to be turned on, otherwise only a single card can be used.")
      endif()
 endif()

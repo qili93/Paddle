@@ -1,6 +1,6 @@
 IF(WITH_GPU)
 cc_library(cuda_stream SRCS cuda_stream.cc DEPS enforce boost)
 ENDIF()
-IF(WITH_ROCM_PLATFORM)
+IF(WITH_ROCM)
 hip_library(cuda_stream SRCS hip_stream.cc DEPS enforce boost)
 ENDIF()
