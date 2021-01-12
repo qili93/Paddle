@@ -380,7 +380,7 @@ function(cc_binary TARGET_NAME)
     common_link(${TARGET_NAME})
   endif()
   get_property(os_dependency_modules GLOBAL PROPERTY OS_DEPENDENCY_MODULES)
-  target_link_libraries(${TARGET_NAME} ${os_dependency_modules})
+  target_link_libraries(${TARGET_NAME} ${os_dependency_modules} ${ROCM_HIPRTC_LIB})
 
   check_coverage_opt(${TARGET_NAME} ${cc_binary_SRCS})
 
