@@ -142,7 +142,9 @@ TEST(CudnnHelper, ScopedConvolutionDescriptor) {
   std::vector<int> src_dilations = {1, 1, 1};
   auto desc = conv_desc.descriptor<float>(src_pads, src_strides, src_dilations);
 
-  gpuDnnDataType_t type;
+#ifndef PADDLE_WITH_HIP
+  cudnnDataType_t type;
+#endif
   gpuDnnConvolutionMode_t mode;
   int nd;
   std::vector<int> pads(3);

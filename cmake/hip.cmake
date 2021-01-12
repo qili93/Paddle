@@ -36,10 +36,10 @@ find_package_and_include(hipsparse)
 find_package_and_include(rocsparse)
 find_package_and_include(rocfft)
 
-# add definitions
-add_definitions(-DPADDLE_WITH_HIP)
-add_definitions(-DEIGEN_USE_GPU)
-add_definitions(-DEIGEN_USE_HIP)
+# add definitions in configure.cmake
+# add_definitions(-DPADDLE_WITH_HIP)
+# add_definitions(-DEIGEN_USE_GPU)
+# add_definitions(-DEIGEN_USE_HIP)
 
 # set CXX flags for HIP
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__HIP_PLATFORM_HCC__")
@@ -63,35 +63,55 @@ list(APPEND HIP_CXX_FLAGS -Wno-implicit-int-float-conversion)
 list(APPEND HIP_CXX_FLAGS -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_HIP)
 list(APPEND HIP_CXX_FLAGS -std=c++11)
 
-# set HIP_HIPCC_FLAGS
-if(CMAKE_BUILD_TYPE  STREQUAL "Debug")
-    list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_DEBUG})
-    list(APPEND HIP_HIPCC_FLAGS -fdebug-info-for-profiling)
-elseif(CMAKE_BUILD_TYPE  STREQUAL "RelWithDebInfo")
-    list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
-    list(APPEND HIP_HIPCC_FLAGS -fdebug-info-for-profiling)
-elseif(CMAKE_BUILD_TYPE  STREQUAL "MinSizeRel")
-    list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_MINSIZEREL})
-endif()
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  list(APPEND HIP_CXX_FLAGS -g2)
+  list(APPEND HIP_CXX_FLAGS -O0)
+  list(APPEND HIP_HIPCC_FLAGS -fdebug-info-for-profiling)
+endif(CMAKE_BUILD_TYPE MATCHES Debug)
+
+set(HIP_HCC_FLAGS ${HIP_CXX_FLAGS})
+# Ask hcc to generate device code during compilation so we can use
+# host linker to link.
+list(APPEND HIP_HCC_FLAGS -fno-gpu-rdc)
+list(APPEND HIP_HCC_FLAGS --amdgpu-target=gfx906)
 
 # set HIP_CLANG_FLAGS or HIP_HCC_FLAGS
 if(HIP_COMPILER STREQUAL clang)
   set(hip_library_name amdhip64)
-  set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
-  list(APPEND HIP_CLANG_FLAGS -fno-gpu-rdc)
-  list(APPEND HIP_CLANG_FLAGS --amdgpu-target=gfx906)
+  # set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
+  # # list(APPEND HIP_CLANG_FLAGS -fno-gpu-rdc)
+  # list(APPEND HIP_CLANG_FLAGS --amdgpu-target=gfx906)
 else()
   set(hip_library_name hip_hcc)
-  set(HIP_HCC_FLAGS ${HIP_CXX_FLAGS})
-  list(APPEND HIP_HCC_FLAGS -fno-gpu-rdc)
-  list(APPEND HIP_HCC_FLAGS --amdgpu-target=gfx906)
+  # set(HIP_HCC_FLAGS ${HIP_CXX_FLAGS})
+  # # list(APPEND HIP_HCC_FLAGS -fno-gpu-rdc)
+  # list(APPEND HIP_HCC_FLAGS --amdgpu-target=gfx906)
 endif()
 message(STATUS "HIP library name: ${hip_library_name}")
+
+
+
+# set HIP_HIPCC_FLAGS
+# set(HIP_HIPCC_FLAGS ${HIP_CXX_FLAGS})
+# if(CMAKE_BUILD_TYPE  STREQUAL "Debug")
+#     list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_DEBUG})
+#     list(APPEND HIP_HIPCC_FLAGS -fdebug-info-for-profiling)
+# elseif(CMAKE_BUILD_TYPE  STREQUAL "RelWithDebInfo")
+#     list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
+#     list(APPEND HIP_HIPCC_FLAGS -fdebug-info-for-profiling)
+# elseif(CMAKE_BUILD_TYPE  STREQUAL "MinSizeRel")
+#     list(APPEND HIP_HIPCC_FLAGS  ${CMAKE_CXX_FLAGS_MINSIZEREL})
+# endif()
+
+# set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")
+# set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -D__HIP_PLATFORM_HCC__")
+# set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -D__HIP_NO_HALF_CONVERSIONS__")
+# set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -std=c++11")
+# set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} --amdgpu-target=gfx906")
 
 # set HIP link libs
 find_library(ROCM_HIPRTC_LIB ${hip_library_name} HINTS ${HIP_PATH}/lib)
 message(STATUS "ROCM_HIPRTC_LIB: ${ROCM_HIPRTC_LIB}")
-
 
 # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")
 # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -D__HIP_PLATFORM_HCC__=1")
