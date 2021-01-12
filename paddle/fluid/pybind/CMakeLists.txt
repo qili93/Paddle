@@ -74,6 +74,9 @@ if(WITH_PYTHON)
   target_link_libraries(op_function_generator ${OP_FUNCTION_GENERETOR_DEPS})
   get_property (os_dependency_modules GLOBAL PROPERTY OS_DEPENDENCY_MODULES)
   target_link_libraries(op_function_generator ${os_dependency_modules})
+  if(WITH_ROCM)
+    target_link_libraries(op_function_generator ${ROCM_HIPRTC_LIB})
+  endif()
 
   set(impl_file ${CMAKE_SOURCE_DIR}/paddle/fluid/pybind/op_function_impl.h)
   set(tmp_impl_file ${impl_file}.tmp)
@@ -152,6 +155,10 @@ if(WITH_PYTHON)
   if(NOT APPLE AND NOT WIN32)
     target_link_libraries(paddle_pybind rt)
   endif(NOT APPLE AND NOT WIN32)
+
+  if(WITH_ROCM)
+    target_link_libraries(paddle_pybind ${ROCM_HIPRTC_LIB})
+  endif()
 
   # if(WITH_ROCM)
   #   cc_library(paddle_pybind SHARED
