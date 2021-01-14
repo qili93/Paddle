@@ -211,7 +211,11 @@ CUDADeviceCode::CUDADeviceCode(const Place& place, const std::string& name,
 
   place_ = place;
   name_ = name;
+#ifdef PADDLE_WITH_HIP
+  kernel_ = "#include <hip/hip_runtime.h>\n" + kernel;
+#else
   kernel_ = kernel;
+#endif
 }
 
 bool CUDADeviceCode::Compile(bool include_path) {
