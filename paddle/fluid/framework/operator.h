@@ -477,7 +477,6 @@ class OperatorWithKernel : public OperatorBase {
   static std::unordered_map<std::string /* op_type */, OpKernelMap>&
   AllOpKernels() {
     static std::unordered_map<std::string, OpKernelMap> g_all_op_kernels;
-    std::cout << "AllOpKernels address is: " << &g_all_op_kernels << std::endl;
     return g_all_op_kernels;
   }
 

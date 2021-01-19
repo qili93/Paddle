@@ -221,3 +221,12 @@ if(WITH_ROCM)
 set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} ${SAFE_GPU_COMMON_FLAGS}")
 endif()
 
+ # Disable -Werror, otherwise the compile will fail for rocblas_gemm_ex
+if(WITH_ROCM)
+string (REPLACE "-Werror" "-Wno-error" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+string (REPLACE "-Werror" "-Wno-error" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+endif()
+
+message(STATUS "CMAKE_C_FLAGS=${CMAKE_C_FLAGS}")
+message(STATUS "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+message(STATUS "HIP_HIPCC_FLAGS=${HIP_HIPCC_FLAGS}")
