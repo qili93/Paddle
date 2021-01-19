@@ -60,7 +60,7 @@ list(APPEND HIP_CXX_FLAGS -Wno-shift-count-overflow)
 list(APPEND HIP_CXX_FLAGS -Wno-unused-command-line-argument)
 list(APPEND HIP_CXX_FLAGS -Wno-duplicate-decl-specifier)
 list(APPEND HIP_CXX_FLAGS -Wno-implicit-int-float-conversion)
-list(APPEND HIP_CXX_FLAGS -Wno-pass-failed=transform-warning)
+list(APPEND HIP_CXX_FLAGS -Wno-pass-failed)
 list(APPEND HIP_CXX_FLAGS -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_HIP)
 list(APPEND HIP_CXX_FLAGS -std=c++14)
 
