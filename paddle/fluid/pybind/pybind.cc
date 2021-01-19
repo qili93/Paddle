@@ -126,7 +126,7 @@ PYBIND11_MAKE_OPAQUE(paddle::framework::FetchType);
 namespace paddle {
 namespace pybind {
 bool IsCompiledWithCUDA() {
-#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#if !defined(PADDLE_WITH_CUDA) && !defined(PADDLE_WITH_HIP)
   return false;
 #else
   return true;
