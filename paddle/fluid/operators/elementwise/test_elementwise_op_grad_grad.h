@@ -115,7 +115,6 @@ class TestElementwiseOpGradGrad {
                           "please check your code."));
 
     // get outputs from scope and compare them with expected_outs
-    bool all_equal = true;
     for (auto &out_name : outputs_) {
       auto &out_tensor =
           scope_.FindVar(out_name)->template Get<framework::LoDTensor>();
@@ -126,14 +125,11 @@ class TestElementwiseOpGradGrad {
       }
       auto *out_ptr = cpu_out.data<T>();
       size_t numel = static_cast<size_t>(framework::product(dims_));
-      auto is_equal =
-          std::equal(out_ptr, out_ptr + numel, expected_outs_[out_name].data());
-      if (!is_equal) {
-        all_equal = false;
-        break;
+      for (size_t i = 0; i < numel; ++i) {
+        EXPECT_FLOAT_EQ(*(out_ptr+i), *(expected_outs_[out_name].data() + i));
       }
     }
-    return all_equal;
+    return true;
   }
 
   virtual std::unique_ptr<framework::OperatorBase> CreateTestOp() = 0;

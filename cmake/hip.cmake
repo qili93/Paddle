@@ -71,10 +71,13 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 set(HIP_HCC_FLAGS ${HIP_CXX_FLAGS})
+set(HIP_CLANG_FLAGS ${HIP_CXX_FLAGS})
 # Ask hcc to generate device code during compilation so we can use
 # host linker to link.
 list(APPEND HIP_HCC_FLAGS -fno-gpu-rdc)
 list(APPEND HIP_HCC_FLAGS --amdgpu-target=gfx906)
+list(APPEND HIP_CLANG_FLAGS -fno-gpu-rdc)
+list(APPEND HIP_CLANG_FLAGS --amdgpu-target=gfx906)
 
 # set HIP_CLANG_FLAGS or HIP_HCC_FLAGS
 if(HIP_COMPILER STREQUAL clang)

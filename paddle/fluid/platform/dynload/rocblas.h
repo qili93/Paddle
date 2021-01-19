@@ -78,7 +78,6 @@ extern void *rocblas_dso_handle;
   __macro(rocblas_zgemm_batched);          \
   __macro(rocblas_create_handle);          \
   __macro(rocblas_destroy_handle);         \
-  __macro(rocblas_add_stream);             \
   __macro(rocblas_set_stream);             \
   __macro(rocblas_get_stream);             \
   __macro(rocblas_set_pointer_mode);       \

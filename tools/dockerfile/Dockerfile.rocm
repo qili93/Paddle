@@ -81,7 +81,8 @@ RUN wget -qO- https://paddle-ci.cdn.bcebos.com/go1.8.1.linux-amd64.tar.gz | \
     mkdir /root/gopath && \
     mkdir /root/gopath/bin && \
     mkdir /root/gopath/src
-ENV GOROOT=/usr/local/go GOPATH=/root/gopath
+ENV GOROOT=/usr/local/go 
+ENV GOPATH=/root/gopath
 # should not be in the same line with GOROOT definition, otherwise docker build could not find GOROOT.
 ENV PATH=${PATH}:${GOROOT}/bin:${GOPATH}/bin
 RUN echo "GOROOT=/usr/local/go" >> ~/.bashrc && \
