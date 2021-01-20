@@ -130,7 +130,7 @@ __global__ void KeFastCollectiveGruGate(T *gate_value,
       }
 
       for (int i = 0; i < Tiled_size; ++i) {
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700
+#if defined(__HIP_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700)
         c0 = c0 + __shfl_sync(Tiled_mask, a0, i, Tiled_size) * b0[i];
 #else
         c0 = c0 + __shfl(a0, i, Tiled_size) * b0[i];
@@ -189,7 +189,7 @@ __global__ void KeFastCollectiveGruOut(const T *gate_weight,
       }
 
       for (int i = 0; i < Tiled_size; ++i) {
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700
+#if defined(__HIP_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700)
         c0 = c0 + __shfl_sync(Tiled_mask, a0, i, Tiled_size) * b0[i];
 #else
         c0 = c0 + __shfl(a0, i, Tiled_size) * b0[i];
