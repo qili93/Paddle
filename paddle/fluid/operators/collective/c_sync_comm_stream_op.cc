@@ -45,7 +45,11 @@ class CSyncCommStreamOp : public framework::OperatorBase {
     int ring_id = Attr<int>("ring_id");
     auto stream =
         platform::NCCLCommContext::Instance().Get(ring_id, place)->stream();
+#ifdef PADDLE_WITH_RCCL
+    PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamSynchronize(stream));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+#endif
 #else
     PADDLE_THROW(platform::errors::PreconditionNotMet(
         "PaddlePaddle should compile with GPU."));

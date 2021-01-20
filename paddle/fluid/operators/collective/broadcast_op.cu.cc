@@ -68,7 +68,11 @@ class NCCLBroadcastOpKernel : public framework::OpKernel<T> {
             << " From " << root_dev_id << " to " << dev_id;
 
     if (ctx.Attr<bool>("sync_mode")) {
+#ifdef PADDLE_WITH_RCCL
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamSynchronize(stream));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+#endif
     }
 #else
     PADDLE_THROW(platform::errors::PreconditionNotMet(

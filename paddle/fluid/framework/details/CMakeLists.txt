@@ -52,10 +52,10 @@ elseif(WITH_ROCM)
 
     if(WITH_DISTRIBUTE)
         hip_library(reduce_op_handle SRCS reduce_op_handle.cc DEPS op_handle_base variable_visitor scope
-            ddim dynload_cuda selected_rows_functor sendrecvop_rpc)
+                    ddim dynload_cuda selected_rows_functor)
     else()
         hip_library(reduce_op_handle SRCS reduce_op_handle.cc DEPS op_handle_base variable_visitor scope
-            ddim dynload_cuda selected_rows_functor)
+                    ddim dynload_cuda selected_rows_functor)
     endif()
     hip_library(broadcast_op_handle SRCS broadcast_op_handle.cc DEPS op_handle_base scope ddim memory variable_visitor dynload_cuda)
     hip_library(fused_broadcast_op_handle SRCS fused_broadcast_op_handle.cc DEPS broadcast_op_handle)

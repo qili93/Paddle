@@ -73,7 +73,11 @@ class AllReduceOpKernel : public framework::OpKernel<T> {
         sendbuff, recvbuff, numel, static_cast<ncclDataType_t>(dtype), red_type,
         comm, stream));
     if (ctx.Attr<bool>("sync_mode")) {
+#ifdef PADDLE_WITH_RCCL
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamSynchronize(stream));
+#else
       PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+#endif
     }
 #else
     PADDLE_THROW(platform::errors::PreconditionNotMet(
