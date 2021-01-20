@@ -39,7 +39,7 @@ class Graph;
 
 namespace paddle {
 namespace platform {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 class NCCLContextMap;
 class NCCLCommunicator;
 #elif defined(PADDLE_WITH_XPU_BKCL)

@@ -21,7 +21,7 @@ namespace imperative {
 static const platform::Place &GetVarPlace(const framework::Variable &src) {
   if (src.IsType<framework::LoDTensor>()) {
     return src.Get<framework::LoDTensor>().place();
-#if defined(PADDLE_WITH_RCCL) || NCCL_VERSION_CODE >= 2212
+#if NCCL_VERSION_CODE >= 2212
   } else if (src.IsType<framework::SelectedRows>()) {
     return src.Get<framework::SelectedRows>().value().place();
 #endif
@@ -52,7 +52,7 @@ static void AllReduce(const framework::Tensor &src, framework::Tensor *dst,
       stream));
 }
 
-#if defined(PADDLE_WITH_RCCL) || NCCL_VERSION_CODE >= 2212
+#if NCCL_VERSION_CODE >= 2212
 static void AllReduce(const framework::SelectedRows &src,
                       framework::SelectedRows *dst,
                       const ParallelStrategy &strategy,
@@ -177,7 +177,7 @@ void AllReduce(const framework::Variable &src, framework::Variable *dst,
     }
     AllReduce(src.Get<framework::LoDTensor>(),
               dst->GetMutable<framework::LoDTensor>(), stream, comm);
-#if defined(PADDLE_WITH_RCCL) || NCCL_VERSION_CODE >= 2212
+#if NCCL_VERSION_CODE >= 2212
   } else if (src.IsType<framework::SelectedRows>()) {
     if (&src != dst) {
       if (!dst->IsType<framework::SelectedRows>()) {

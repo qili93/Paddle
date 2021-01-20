@@ -11,8 +11,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
-#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
+#ifdef PADDLE_WITH_NCCL
 #include <nccl.h>
+#endif
+#ifdef PADDLE_WITH_RCCL
+#include <rccl.h>
 #endif
 #include <stdint.h>
 #include <ostream>

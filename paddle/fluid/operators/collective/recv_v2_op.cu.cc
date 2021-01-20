@@ -26,7 +26,7 @@ template <typename T>
 class RecvOpV2CUDAKernel : public framework::OpKernel<T> {
  public:
   void Compute(const framework::ExecutionContext &ctx) const override {
-#if defined(PADDLE_WITH_RCCL) || (defined(PADDLE_WITH_NCCL) && NCCL_VERSION_CODE >= 2703)
+#if (defined(PADDLE_WITH_RCCL) || defined(PADDLE_WITH_NCCL)) && NCCL_VERSION_CODE >= 2703
     int rid = ctx.Attr<int>("ring_id");
     PADDLE_ENFORCE_GE(
         rid, 0,

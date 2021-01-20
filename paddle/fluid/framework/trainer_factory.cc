@@ -69,7 +69,7 @@ REGISTER_TRAINER_CLASS(DistMultiTrainer);
 REGISTER_TRAINER_CLASS(HeterXpuTrainer);
 REGISTER_TRAINER_CLASS(HeterBoxTrainer);
 #endif
-#if (defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)) && \
+#if (defined PADDLE_WITH_NCCL || defined PADDLE_WITH_RCCL) && \
     (defined PADDLE_WITH_PSLIB)
 REGISTER_TRAINER_CLASS(PSGPUTrainer);
 #endif

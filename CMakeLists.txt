@@ -291,6 +291,7 @@ endif()
 
 if(WITH_RCCL)
      add_definitions("-DPADDLE_WITH_RCCL")
+     include(rccl)
 else()
      if(WITH_ROCM)
          MESSAGE(WARNING "If the environment is multi-card, the WITH_RCCL option needs to be turned on, otherwise only a single card can be used.")

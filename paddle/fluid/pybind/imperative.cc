@@ -913,7 +913,7 @@ void BindImperative(py::module *m_ptr) {
               const imperative::ParallelStrategy &strategy) {
              if (strategy.nranks_ > 1) {
 #if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
-#if defined(PADDLE_WITH_RCCL) || NCCL_VERSION_CODE >= 2212
+#if NCCL_VERSION_CODE >= 2212
                imperative::AllReduce(self.Var(), self.MutableVar(), strategy);
 #else
                if (!self.Var().IsType<framework::SelectedRows>()) {

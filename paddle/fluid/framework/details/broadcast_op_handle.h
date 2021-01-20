@@ -34,7 +34,7 @@ class Node;
 }  // namespace ir
 }  // namespace framework
 namespace platform {
-#if defined(PADDLE_WITH_NCCL)
+#if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
 struct NCCLContextMap;
 #endif
 #if defined(PADDLE_WITH_XPU_BKCL)
