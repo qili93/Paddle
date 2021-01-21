@@ -133,7 +133,7 @@ elementwise_add_grad(const framework::ExecutionContext &ctx,
 }
 
 #if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
-#if defined(__NVCC__) || defined(__HIPICC__)
+#if defined(__NVCC__) || defined(__HIPCC__)
 template <typename T, int Size>
 struct alignas(sizeof(T) * Size) AlignedVector {
   T val[Size];
@@ -321,7 +321,7 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
     auto *out = dout;
 
 #if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
-#if defined(__NVCC__) || defined(__HIPICC__)
+#if defined(__NVCC__) || defined(__HIPCC__)
 
     int axis = ctx.Attr<int>("axis");
     if (ctx.GetPlace() == platform::CUDAPlace() && dx != nullptr &&
