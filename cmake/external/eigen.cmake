@@ -49,15 +49,19 @@ elseif(LINUX)
     # add patch to avoid compilation error in c++11
     file(TO_NATIVE_PATH ${PADDLE_SOURCE_DIR}/patches/eigen/MathFunctions.h native_src2)
     file(TO_NATIVE_PATH ${EIGEN_SOURCE_DIR}/Eigen/src/Core/MathFunctions.h native_dst2)
-    # For HIPCC Eigen::internal::device::numeric_limits is not EIGEN_DEVICE_FUNC
-    # which will cause compiler error of using __host__ funciont in __host__ __device__
-    file(TO_NATIVE_PATH ${PADDLE_SOURCE_DIR}/patches/eigen/Meta.h native_src3)
-    file(TO_NATIVE_PATH ${EIGEN_SOURCE_DIR}/Eigen/src/Core/util/Meta.h native_dst3)
-    # For HIPCC Eigen::internal::scalar_sum_op<bool,bool> is not EIGEN_DEVICE_FUNC
-    # which will cause compiler error of using __host__ funciont in __host__ __device__
-    file(TO_NATIVE_PATH ${PADDLE_SOURCE_DIR}/patches/eigen/BinaryFunctors.h native_src4)
-    file(TO_NATIVE_PATH ${EIGEN_SOURCE_DIR}/Eigen/src/Core/functors/BinaryFunctors.h native_dst4)
-    set(EIGEN_PATCH_COMMAND cp ${native_src1} ${native_dst1} && cp ${native_src2} ${native_dst2} && cp ${native_src3} ${native_dst3} && cp ${native_src4} ${native_dst4})
+    if(WITH_ROCM)
+        # For HIPCC Eigen::internal::device::numeric_limits is not EIGEN_DEVICE_FUNC
+        # which will cause compiler error of using __host__ funciont in __host__ __device__
+        file(TO_NATIVE_PATH ${PADDLE_SOURCE_DIR}/patches/eigen/Meta.h native_src3)
+        file(TO_NATIVE_PATH ${EIGEN_SOURCE_DIR}/Eigen/src/Core/util/Meta.h native_dst3)
+        # For HIPCC Eigen::internal::scalar_sum_op<bool,bool> is not EIGEN_DEVICE_FUNC
+        # which will cause compiler error of using __host__ funciont in __host__ __device__
+        file(TO_NATIVE_PATH ${PADDLE_SOURCE_DIR}/patches/eigen/BinaryFunctors.h native_src4)
+        file(TO_NATIVE_PATH ${EIGEN_SOURCE_DIR}/Eigen/src/Core/functors/BinaryFunctors.h native_dst4)
+        set(EIGEN_PATCH_COMMAND cp ${native_src1} ${native_dst1} && cp ${native_src2} ${native_dst2} && cp ${native_src3} ${native_dst3} && cp ${native_src4} ${native_dst4})
+    else()
+        set(EIGEN_PATCH_COMMAND cp ${native_src1} ${native_dst1} && cp ${native_src2} ${native_dst2})
+    endif()
 endif()
 
 set(EIGEN_INCLUDE_DIR ${EIGEN_SOURCE_DIR})
@@ -70,7 +74,6 @@ ExternalProject_Add(
     "${EIGEN_DOWNLOAD_CMD}"
     PREFIX          ${EIGEN_PREFIX_DIR}
     SOURCE_DIR      ${EIGEN_SOURCE_DIR}
-    CMAKE_ARGS      -DEIGEN_USE_HIP=ON
     UPDATE_COMMAND    ""
     PATCH_COMMAND   ${EIGEN_PATCH_COMMAND}
     CONFIGURE_COMMAND ""
