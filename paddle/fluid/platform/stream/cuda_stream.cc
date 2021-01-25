@@ -29,11 +29,21 @@ bool CUDAStream::Init(const Place& place, const Priority& priority) {
   place_ = place;
   CUDADeviceGuard guard(BOOST_GET_CONST(CUDAPlace, place_).device);
   if (priority == Priority::kHigh) {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        hipStreamCreateWithPriority(&stream_, kDefaultFlag, -1));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         cudaStreamCreateWithPriority(&stream_, kDefaultFlag, -1));
+#endif
   } else if (priority == Priority::kNormal) {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        hipStreamCreateWithPriority(&stream_, kDefaultFlag, 0));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(
         cudaStreamCreateWithPriority(&stream_, kDefaultFlag, 0));
+#endif
   }
   callback_manager_.reset(new StreamCallbackManager(stream_));
   VLOG(3) << "CUDAStream Init stream: " << stream_
@@ -46,7 +56,11 @@ void CUDAStream::Destroy() {
   Wait();
   WaitCallback();
   if (stream_) {
+#ifdef PADDLE_WITH_HIP
+    PADDLE_ENFORCE_CUDA_SUCCESS(hipStreamDestroy(stream_));
+#else
     PADDLE_ENFORCE_CUDA_SUCCESS(cudaStreamDestroy(stream_));
+#endif
   }
   stream_ = nullptr;
 }
@@ -54,12 +68,23 @@ void CUDAStream::Destroy() {
 void CUDAStream::Wait() const {
   cudaError_t e_sync = cudaSuccess;
 #if !defined(_WIN32)
+#ifdef PADDLE_WITH_HIP
+  e_sync = hipStreamSynchronize(stream_);
+#else
   e_sync = cudaStreamSynchronize(stream_);
+#endif  // PADDLE_WITH_HIP
+#else
+#ifdef PADDLE_WITH_HIP
+  while (e_sync = hipStreamQuery(stream_)) {
+    if (e_sync == hipErrorNotReady) continue;
+    break;
+  }
 #else
   while (e_sync = cudaStreamQuery(stream_)) {
     if (e_sync == cudaErrorNotReady) continue;
     break;
   }
+#endif  // PADDLE_WITH_HIP
 #endif
 
   PADDLE_ENFORCE_CUDA_SUCCESS(e_sync);
