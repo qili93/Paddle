@@ -49,9 +49,13 @@ TEST(BroadcastTester, TestGPUBroadcastTestLodTensor) {
 TEST(BroadcastTester, TestGPUBroadcastTestSelectedRows) {
   TestBroadcastOpHandle test_op;
   size_t input_scope_idx = 0;
+  std::cout << __FILE__ << ":" << __LINE__ << std::endl;
   test_op.InitCtxOnDevice(p::kCUDA);
+  std::cout << __FILE__ << ":" << __LINE__ << std::endl;
   test_op.InitBroadcastOp(input_scope_idx);
+  std::cout << __FILE__ << ":" << __LINE__ << std::endl;
   test_op.TestBroadcastSelectedRows(input_scope_idx);
+  std::cout << __FILE__ << ":" << __LINE__ << std::endl;
 }
 #endif
 
