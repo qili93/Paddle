@@ -38,13 +38,13 @@ TEST(BroadcastTester, TestCPUBroadcastTestSelectedRows) {
 
 #if (defined(PADDLE_WITH_CUDA) && defined(PADDLE_WITH_NCCL)) || \
     (defined(PADDLE_WITH_HIP) && defined(PADDLE_WITH_RCCL))
-TEST(BroadcastTester, TestGPUBroadcastTestLodTensor) {
-  TestBroadcastOpHandle test_op;
-  size_t input_scope_idx = 0;
-  test_op.InitCtxOnDevice(p::kCUDA);
-  test_op.InitBroadcastOp(input_scope_idx);
-  test_op.TestBroadcastLodTensor(input_scope_idx);
-}
+// TEST(BroadcastTester, TestGPUBroadcastTestLodTensor) {
+//   TestBroadcastOpHandle test_op;
+//   size_t input_scope_idx = 0;
+//   test_op.InitCtxOnDevice(p::kCUDA);
+//   test_op.InitBroadcastOp(input_scope_idx);
+//   test_op.TestBroadcastLodTensor(input_scope_idx);
+// }
 
 TEST(BroadcastTester, TestGPUBroadcastTestSelectedRows) {
   TestBroadcastOpHandle test_op;
