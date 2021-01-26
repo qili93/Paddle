@@ -20,7 +20,11 @@ namespace paddle {
 namespace platform {
 namespace stream {
 
+#ifdef PADDLE_WITH_HIP
+constexpr unsigned int kDefaultFlag = hipStreamDefault;
+#else
 constexpr unsigned int kDefaultFlag = cudaStreamDefault;
+#endif
 
 bool CUDAStream::Init(const Place& place, const Priority& priority) {
   PADDLE_ENFORCE_EQ(is_gpu_place(place), true,
@@ -66,26 +70,27 @@ void CUDAStream::Destroy() {
 }
 
 void CUDAStream::Wait() const {
-  cudaError_t e_sync = cudaSuccess;
-#if !defined(_WIN32)
 #ifdef PADDLE_WITH_HIP
+  hipError_t e_sync = hipSuccess;
+#if !defined(_WIN32)
   e_sync = hipStreamSynchronize(stream_);
 #else
-  e_sync = cudaStreamSynchronize(stream_);
-#endif  // PADDLE_WITH_HIP
-#else
-#ifdef PADDLE_WITH_HIP
   while (e_sync = hipStreamQuery(stream_)) {
     if (e_sync == hipErrorNotReady) continue;
     break;
   }
+#endif
+#else
+  cudaError_t e_sync = cudaSuccess;
+#if !defined(_WIN32)
+  e_sync = cudaStreamSynchronize(stream_);
 #else
   while (e_sync = cudaStreamQuery(stream_)) {
     if (e_sync == cudaErrorNotReady) continue;
     break;
   }
-#endif  // PADDLE_WITH_HIP
 #endif
+#endif  // PADDLE_WITH_HIP
 
   PADDLE_ENFORCE_CUDA_SUCCESS(e_sync);
 }

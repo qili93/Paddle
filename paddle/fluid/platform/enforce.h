@@ -94,6 +94,10 @@ limitations under the License. */
 // Note: these headers for simplify demangle type string
 #include "paddle/fluid/framework/type_defs.h"
 #include "paddle/fluid/imperative/type_defs.h"
+// Note: this header for simplify HIP and CUDA type string
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#include "paddle/fluid/platform/type_defs.h"
+#endif
 
 namespace paddle {
 namespace platform {
@@ -425,7 +429,7 @@ struct EnforceNotMet : public std::exception {
       asm("trap;");                                                          \
     }                                                                        \
   } while (0)
-#elif defined(__HIP_DEVICE_COMPILE__)
+#elif defined(__HIPCC__)
 #define PADDLE_ENFORCE(_IS_NOT_ERROR, __FORMAT, ...)                         \
   do {                                                                       \
     if (!(_IS_NOT_ERROR)) {                                                  \
