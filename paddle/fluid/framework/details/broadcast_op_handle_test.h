@@ -97,18 +97,23 @@ struct TestBroadcastOpHandle {
     } else if (use_device_ == p::kCUDA) {
 #if defined(PADDLE_WITH_NCCL) || defined(PADDLE_WITH_RCCL)
       int count = p::GetCUDADeviceCount();
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
+      std::cout << "count: " << count << std::endl;
       if (count <= 1) {
         LOG(WARNING) << "Cannot test multi-gpu Broadcast, because the CUDA "
                         "device count is "
                      << count;
         exit(0);
       }
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       for (int i = 0; i < count; ++i) {
         auto p = p::CUDAPlace(i);
         place_list_.push_back(p);
         ctxs_.emplace_back(new p::CUDADeviceContext(p));
       }
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       nccl_ctxs_.reset(new platform::NCCLContextMap(place_list_));
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
 #else
       PADDLE_THROW(
           platform::errors::PreconditionNotMet("Not compiled with NCLL."));
