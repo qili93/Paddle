@@ -111,6 +111,9 @@ cc_library(async_ssa_graph_executor SRCS async_ssa_graph_executor.cc DEPS ${ASYN
 
 cc_test(broadcast_op_test SRCS broadcast_op_handle_test.cc DEPS var_handle op_handle_base scope ddim memory
         device_context broadcast_op_handle)
+if(WITH_TESTING AND TEST broadcast_op_test)
+    set_tests_properties(broadcast_op_test PROPERTIES TIMEOUT 120)
+endif()
 cc_test(gather_op_test SRCS gather_op_handle_test.cc DEPS var_handle op_handle_base scope ddim memory
         device_context gather_op_handle)
 
