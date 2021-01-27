@@ -122,10 +122,13 @@ struct NCCLContextMap {
     // if num_trainers == 1, should create a new nccl id for local comms.
     if (num_trainers == 1 && nccl_id == nullptr) {
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-      std::lock_guard<std::mutex> guard(NCCLGroupGuard::NCCLMutex());
+      // std::lock_guard<std::mutex> guard(NCCLGroupGuard::NCCLMutex());
+      NCCLGroupGuard::NCCLMutex().lock();
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       PADDLE_RETRY_CUDA_SUCCESS(platform::dynload::ncclCommInitAll(
           comms.get(), static_cast<int>(order_.size()), order_.data()));
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
+      NCCLGroupGuard::NCCLMutex().unlock();
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     } else {
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
