@@ -123,8 +123,10 @@ struct NCCLContextMap {
     if (num_trainers == 1 && nccl_id == nullptr) {
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       std::lock_guard<std::mutex> guard(NCCLGroupGuard::NCCLMutex());
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       PADDLE_RETRY_CUDA_SUCCESS(platform::dynload::ncclCommInitAll(
           comms.get(), static_cast<int>(order_.size()), order_.data()));
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     } else {
       std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       PADDLE_ENFORCE_NOT_NULL(nccl_id, platform::errors::InvalidArgument(
