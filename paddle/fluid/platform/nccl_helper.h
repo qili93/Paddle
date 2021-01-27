@@ -101,15 +101,18 @@ struct NCCLContextMap {
   explicit NCCLContextMap(const std::vector<platform::Place> &places,
                           ncclUniqueId *nccl_id = nullptr,
                           size_t num_trainers = 1, size_t trainer_id = 0) {
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     PADDLE_ENFORCE_EQ(!places.empty(), true,
                       platform::errors::InvalidArgument(
                           "The NCCL place should not be empty."));
     order_.reserve(places.size());
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     for (auto &p : places) {
       int dev_id = BOOST_GET_CONST(CUDAPlace, p).device;
       order_.emplace_back(dev_id);
       contexts_.emplace(dev_id, NCCLContext(dev_id));
     }
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     PADDLE_ENFORCE_EQ(
         order_.size(), contexts_.size(),
         platform::errors::Unavailable("NCCL Context Map does not support "
@@ -118,15 +121,18 @@ struct NCCLContextMap {
     std::unique_ptr<ncclComm_t[]> comms(new ncclComm_t[order_.size()]);
     // if num_trainers == 1, should create a new nccl id for local comms.
     if (num_trainers == 1 && nccl_id == nullptr) {
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       std::lock_guard<std::mutex> guard(NCCLGroupGuard::NCCLMutex());
       PADDLE_RETRY_CUDA_SUCCESS(platform::dynload::ncclCommInitAll(
           comms.get(), static_cast<int>(order_.size()), order_.data()));
     } else {
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
       PADDLE_ENFORCE_NOT_NULL(nccl_id, platform::errors::InvalidArgument(
                                            "The NCCL id should not be null."));
       {
         int nranks = num_trainers * order_.size();
         NCCLGroupGuard gurad;
+        std::cout << __FILE__ << ":" << __LINE__ << std::endl;
         for (size_t i = 0; i < order_.size(); ++i) {
           int gpu_id = order_[i];
           int rank;
@@ -142,11 +148,14 @@ struct NCCLContextMap {
               comms.get() + i, nranks, *nccl_id, rank));
         }
       }
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     }
     int i = 0;
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl;
     for (auto &dev_id : order_) {
       contexts_.at(dev_id).comm_ = comms[i++];
     }
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl;
   }
 
   NCCLContextMap(const NCCLContextMap &other) = delete;
