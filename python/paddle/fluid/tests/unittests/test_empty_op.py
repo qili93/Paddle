@@ -18,6 +18,7 @@ import unittest
 import numpy as np
 import paddle
 import paddle.fluid as fluid
+import paddle.fluid.core as core
 from op_test import OpTest
 from paddle.fluid import Program, program_guard
 from paddle.fluid.framework import convert_np_dtype_to_dtype_
@@ -218,6 +219,8 @@ class TestEmptyAPI(unittest.TestCase):
         paddle.disable_static()
         shape = [200, 3]
         dtype = 'float64'
+        if core.is_compiled_with_rocm():
+            dtype = 'float32'
         out = paddle.empty(shape=shape, dtype=dtype)
         self.__check_out__(out, dtype)
         paddle.enable_static()
