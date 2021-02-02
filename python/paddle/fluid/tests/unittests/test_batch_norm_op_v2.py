@@ -134,6 +134,7 @@ class TestBatchNorm(unittest.TestCase):
             self.assertTrue(np.allclose(y3, y4))
 
     def test_static(self):
+        paddle.enable_static()
         places = [fluid.CPUPlace()]
         if core.is_compiled_with_cuda() and core.op_support_gpu("batch_norm"):
             places.append(fluid.CUDAPlace(0))
@@ -166,6 +167,7 @@ class TestBatchNorm(unittest.TestCase):
             y1 = compute_v1(x, False, False)
             y2 = compute_v2(x)
             self.assertTrue(np.allclose(y1, y2))
+        paddle.disable_static()
 
 
 class TestBatchNormChannelLast(unittest.TestCase):
