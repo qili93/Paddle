@@ -16,6 +16,7 @@ import unittest
 import numpy as np
 from op_test import OpTest
 import paddle
+import paddle.fluid.core as core
 
 
 def AffineGrid(theta, size, align_corners):
@@ -82,7 +83,10 @@ class TestAffineGridOpCase1(TestAffineGridOp):
         self.theta_shape = (20, 2, 3)
         self.output_shape = np.array([20, 2, 5, 7]).astype("int32")
         self.dynamic_shape = True
-        self.use_cudnn = True
+        if core.is_compiled_with_rocm():
+            self.use_cudnn = False
+        else:
+            self.use_cudnn = True
         self.align_corners = True
 
 
