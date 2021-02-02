@@ -171,7 +171,10 @@ class TestBatchNorm(unittest.TestCase):
 class TestBatchNormChannelLast(unittest.TestCase):
     def setUp(self):
         self.original_dtyep = paddle.get_default_dtype()
-        paddle.set_default_dtype("float64")
+        if core.is_compiled_with_rocm():
+            paddle.set_default_dtype("float32")
+        else:
+            paddle.set_default_dtype("float64")
         self.places = [fluid.CPUPlace()]
         if core.is_compiled_with_cuda() and core.op_support_gpu("batch_norm"):
             self.places.append(fluid.CUDAPlace(0))
