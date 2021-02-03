@@ -98,8 +98,11 @@ class TestCholeskyOp2D(TestCholeskyOp):
 class TestDygraph(unittest.TestCase):
     def test_dygraph(self):
         paddle.disable_static()
-        a = np.random.rand(3, 3)
-        a_t = np.transpose(a, [1, 0])
+        data_type = "float64"
+        if core.is_compiled_with_rocm():
+            data_type = "float32"
+        a = np.random.rand(3, 3).astype(data_type)
+        a_t = np.transpose(a, [1, 0]).astype(data_type)
         x_data = np.matmul(a, a_t) + 1e-03
         x = paddle.to_tensor(x_data)
         out = paddle.cholesky(x, upper=False)
