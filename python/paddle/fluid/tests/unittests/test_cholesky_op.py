@@ -42,11 +42,16 @@ class TestCholeskyOp(OpTest):
         self.trans_dims = list(range(len(self._input_shape) - 2)) + [
             len(self._input_shape) - 1, len(self._input_shape) - 2
         ]
-        self.root_data = np.random.random(self._input_shape).astype("float64")
+
+        data_type = "float64"
+        if core.is_compiled_with_rocm():
+            data_type = "float32"
+
+        self.root_data = np.random.random(self._input_shape).astype(data_type)
         # construct symmetric positive-definite matrice
         input_data = np.matmul(
             self.root_data, self.root_data.transpose(self.trans_dims)) + 1e-05
-        output_data = np.linalg.cholesky(input_data).astype("float64")
+        output_data = np.linalg.cholesky(input_data).astype(data_type)
         if self._upper:
             output_data = output_data.transpose(self.trans_dims)
         self.inputs = {"X": input_data}
@@ -108,10 +113,14 @@ class TestCholeskySingularAPI(unittest.TestCase):
 
     def check_static_result(self, place, with_out=False):
         with fluid.program_guard(fluid.Program(), fluid.Program()):
-            input = fluid.data(name="input", shape=[4, 4], dtype="float64")
+            data_type = "float64"
+            if core.is_compiled_with_rocm():
+                data_type = "float32"
+
+            input = fluid.data(name="input", shape=[4, 4], dtype=data_type)
             result = paddle.cholesky(input)
 
-            input_np = np.zeros([4, 4]).astype("float64")
+            input_np = np.zeros([4, 4]).astype(data_type)
 
             exe = fluid.Executor(place)
             try:
@@ -132,9 +141,13 @@ class TestCholeskySingularAPI(unittest.TestCase):
     def test_dygraph(self):
         for place in self.places:
             with fluid.dygraph.guard(place):
+                data_type = "float64"
+                if core.is_compiled_with_rocm():
+                    data_type = "float32"
+
                 input_np = np.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]],
                                      [[10, 11, 12], [13, 14, 15],
-                                      [16, 17, 18]]]).astype("float64")
+                                      [16, 17, 18]]]).astype(data_type)
                 input = fluid.dygraph.to_variable(input_np)
                 try:
                     result = paddle.cholesky(input)
