@@ -16,32 +16,24 @@ limitations under the License. */
 
 #ifdef PADDLE_WITH_CUDA
 #include <cuda_runtime.h>
-#define gpuSuccess cudaSuccess
 #define gpuErrorMemoryAllocation cudaErrorMemoryAllocation
 #define gpuErrorCudartUnloading cudaErrorCudartUnloading
-typedef cudaError_t gpuError_t;
-typedef cudaEvent_t gpuEvent_t;
-typedef cudaStream_t gpuStream_t;
 typedef cudaDeviceProp gpuDeviceProp_t;
-typedef enum cudaMemcpyKind gpuMemcpyKind;
 #endif
 
 #ifdef PADDLE_WITH_HIP
 #include <hip/hip_runtime.h>
-#define gpuSuccess hipSuccess
 #define gpuErrorMemoryAllocation hipErrorOutOfMemory
 #define gpuErrorCudartUnloading hipErrorDeinitialized
-typedef hipError_t gpuError_t;
-typedef hipEvent_t gpuEvent_t;
-typedef hipStream_t gpuStream_t;
 typedef hipDeviceProp_t gpuDeviceProp_t;
-typedef enum hipMemcpyKind gpuMemcpyKind;
 #endif
 
-#if (defined PADDLE_WITH_CUDA || defined PADDLE_WITH_HIP)
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+// Note: this header for simplify HIP and CUDA type string
 #include <stddef.h>
 #include <string>
 #include <vector>
+#include "paddle/fluid/platform/type_defs.h"
 
 namespace paddle {
 namespace platform {
@@ -108,11 +100,19 @@ size_t GpuMaxChunkSize();
 
 //! Copy memory from address src to dst asynchronously.
 void GpuMemcpyAsync(void *dst, const void *src, size_t count,
-                    gpuMemcpyKind kind, gpuStream_t stream);
+#ifdef PADDLE_WITH_HIP
+                    enum hipMemcpyKind kind, hipStream_t stream);
+#else
+                    enum cudaMemcpyKind kind, cudaStream_t stream);
+#endif
 
 //! Copy memory from address src to dst synchronously.
 void GpuMemcpySync(void *dst, const void *src, size_t count,
-                   gpuMemcpyKind kind);
+#ifdef PADDLE_WITH_HIP
+                   enum hipMemcpyKind kind);
+#else
+                   enum cudaMemcpyKind kind);
+#endif
 
 //! Copy memory from one device to another device asynchronously.
 void GpuMemcpyPeerAsync(void *dst, int dst_device, const void *src,

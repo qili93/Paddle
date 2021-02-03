@@ -528,14 +528,14 @@ class TestWithInput1x1Filter1x1(TestConv2DOp):
         self.groups = 3
 
 
-# #----------------Conv2DCUDNN----------------
+#----------------Conv2DCUDNN----------------
 
-# create_test_cudnn_class(TestConv2DOp)
-# create_test_cudnn_class(TestWithPad)
-# create_test_cudnn_class(TestWithStride)
-# create_test_cudnn_class(TestWithGroup)
-# create_test_cudnn_class(TestWith1x1)
-# create_test_cudnn_class(TestWithInput1x1Filter1x1)
+create_test_cudnn_class(TestConv2DOp)
+create_test_cudnn_class(TestWithPad)
+create_test_cudnn_class(TestWithStride)
+create_test_cudnn_class(TestWithGroup)
+create_test_cudnn_class(TestWith1x1)
+create_test_cudnn_class(TestWithInput1x1Filter1x1)
 
 # #----------------Conv2DCUDNN fp16----------------
 
