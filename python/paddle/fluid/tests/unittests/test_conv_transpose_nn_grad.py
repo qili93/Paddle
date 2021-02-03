@@ -32,6 +32,8 @@ class TestConvTransposeDoubleGradCheck(unittest.TestCase):
         shape = [2, 4, 3, 3]
         eps = 0.005
         dtype = np.float64
+        if core.is_compiled_with_rocm():
+            dtype = np.float32
         x = layers.data('x', shape, False, dtype)
         y = layers.conv2d_transpose(
             x, 2, filter_size=1, groups=1, bias_attr=False)
@@ -45,12 +47,14 @@ class TestConvTransposeDoubleGradCheck(unittest.TestCase):
             [x] + w, y, x_init=[x_arr] + w_arr, place=place, eps=eps)
 
     def test_grad(self):
+        paddle.enable_static()
         places = []
 
         if core.is_compiled_with_cuda():
             places.append(fluid.CUDAPlace(0))
         for p in places:
             self.func(p)
+        paddle.disable_static()
 
 
 class TestConvTranspose2DoubleGradCheck_AsyPadding(
@@ -60,6 +64,11 @@ class TestConvTranspose2DoubleGradCheck_AsyPadding(
         shape = [2, 2, 3, 3]
         eps = 0.005
         dtype = np.float64
+        if core.is_compiled_with_rocm():
+            dtype = np.float32
+        use_cudnn = True
+        if core.is_compiled_with_rocm():
+            use_cudnn = False
         x = layers.data('x', shape, False, dtype)
         y = layers.conv2d_transpose(
             input=x,
@@ -67,7 +76,7 @@ class TestConvTranspose2DoubleGradCheck_AsyPadding(
             filter_size=1,
             padding=[1, 0, 0, 1],
             bias_attr=False,
-            use_cudnn=True)
+            use_cudnn=use_cudnn)
         x_arr = np.random.uniform(-1, 1, shape).astype(dtype)
 
         w = fluid.default_main_program().global_block().all_parameters()
@@ -85,6 +94,11 @@ class TestConvTranspose2DoubleGradCheck_PaddingSAME(
         shape = [2, 2, 3, 3]
         eps = 0.005
         dtype = np.float64
+        if core.is_compiled_with_rocm():
+            dtype = np.float32
+        use_cudnn = True
+        if core.is_compiled_with_rocm():
+            use_cudnn = False
         x = layers.data('x', shape, False, dtype)
         y = layers.conv2d_transpose(
             input=x,
@@ -92,7 +106,7 @@ class TestConvTranspose2DoubleGradCheck_PaddingSAME(
             filter_size=1,
             padding="SAME",
             bias_attr=False,
-            use_cudnn=True)
+            use_cudnn=use_cudnn)
         x_arr = np.random.uniform(-1, 1, shape).astype(dtype)
 
         w = fluid.default_main_program().global_block().all_parameters()
@@ -110,6 +124,11 @@ class TestConvTranspose2DoubleGradCheck_PaddingVALID(
         shape = [2, 2, 3, 3]
         eps = 0.005
         dtype = np.float64
+        if core.is_compiled_with_rocm():
+            dtype = np.float32
+        use_cudnn = True
+        if core.is_compiled_with_rocm():
+            use_cudnn = False
         x = layers.data('x', shape, False, dtype)
         y = layers.conv2d_transpose(
             input=x,
@@ -117,7 +136,7 @@ class TestConvTranspose2DoubleGradCheck_PaddingVALID(
             filter_size=1,
             padding="VALID",
             bias_attr=False,
-            use_cudnn=True)
+            use_cudnn=use_cudnn)
         x_arr = np.random.uniform(-1, 1, shape).astype(dtype)
 
         w = fluid.default_main_program().global_block().all_parameters()
@@ -135,6 +154,11 @@ class TestConvTranspose2DoubleGradCheck_ChannelLast(
         shape = [2, 3, 3, 2]
         eps = 0.005
         dtype = np.float64
+        if core.is_compiled_with_rocm():
+            dtype = np.float32
+        use_cudnn = True
+        if core.is_compiled_with_rocm():
+            use_cudnn = False
         x = layers.data('x', shape, False, dtype)
         y = layers.conv2d_transpose(
             input=x,
@@ -142,7 +166,7 @@ class TestConvTranspose2DoubleGradCheck_ChannelLast(
             filter_size=1,
             padding=[1, 1],
             bias_attr=False,
-            use_cudnn=True,
+            use_cudnn=use_cudnn,
             groups=1,
             data_format="NHWC")
         x_arr = np.random.uniform(-1, 1, shape).astype(dtype)
