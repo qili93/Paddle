@@ -94,7 +94,10 @@ class TestCholeskyOp2D(TestCholeskyOp):
 
 class TestDygraph(unittest.TestCase):
     def test_dygraph(self):
-        paddle.disable_static()
+        if core.is_compiled_with_rocm():
+            paddle.disable_static(place=fluid.CPUPlace())
+        else:
+            paddle.disable_static()
         a = np.random.rand(3, 3)
         a_t = np.transpose(a, [1, 0])
         x_data = np.matmul(a, a_t) + 1e-03
