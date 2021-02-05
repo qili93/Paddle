@@ -35,6 +35,8 @@ from decorator_helper import prog_scope
     "and we can construct symmetric positive-definite matrices in the program")
 class TestCholeskyOp(OpTest):
     def setUp(self):
+        if core.is_compiled_with_rocm():
+            self._cpu_only = True
         self.op_type = "cholesky"
         self._input_shape = (2, 32, 32)
         self._upper = True
