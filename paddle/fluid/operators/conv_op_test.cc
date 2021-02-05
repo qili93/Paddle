@@ -27,10 +27,10 @@ namespace paddle {
 namespace operators {
 
 // input
-const int batch_size = 2;
+const int batch_size = 100;
 const int input_channel = 3;
-const int input_height = 5;
-const int input_width = 5;
+const int input_height = 1;
+const int input_width = 1;
 // filter
 const int output_channel = 120;
 const int groups = 3;

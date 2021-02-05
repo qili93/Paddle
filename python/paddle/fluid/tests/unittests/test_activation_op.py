@@ -95,7 +95,7 @@ class TestParameter(object):
             if core.is_compiled_with_rocm():
                 self.assertTrue(np.allclose(z, z_expected))
             else:
-                self.assertEqual(result, expected)
+                self.assertEqual(z, z_expected)
 
 
 class TestSigmoid(TestActivation):

@@ -351,9 +351,10 @@ class CudnnDataType<double> {
 #endif
 
 #ifdef PADDLE_WITH_HIP
+// MIOPEN only support data layout of NCHW, use enum just for compatibility with CUDNN API
 typedef enum {
-    MIOPEN_TENSOR_NCHW = 0, /* row major (wStride = 1, hStride = w) */
-    MIOPEN_TENSOR_NHWC = 1, /* feature maps interleaved ( cStride = 1 )*/
+    MIOPEN_TENSOR_NCHW = 0,
+    MIOPEN_TENSOR_NHWC = 1,
 } miopenTensorFormat_t;
 
 inline miopenTensorFormat_t GetCudnnTensorFormat(
@@ -432,21 +433,16 @@ class ScopedTensorDescriptor {
     }
 
 #ifdef PADDLE_WITH_HIP
+    // MIOPEN ONLY support data layout of NCHW
+    PADDLE_ENFORCE_EQ(format, MIOPEN_TENSOR_NCHW, platform::errors::InvalidArgument("format should be MIOPEN_TENSOR_NCHW in MIOPEN."));
     if (dims.size() == 4) {
-      if (format == MIOPEN_TENSOR_NCHW) {
-        PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
-            desc_, type, dims_with_group.size(), const_cast<int*>(dims_with_group.data()),
-            const_cast<int*>(strides.data())));
-      } else {  // CUDNN_TENSOR_NHWC
-        PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSet4dTensorDescriptor(
-            desc_, type, dims[0], dims[3], dims[1], dims[2]));
-      }
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
+          desc_, type, dims_with_group.size(), const_cast<int*>(dims_with_group.data()),
+          const_cast<int*>(strides.data())));
     } else if (dims.size() == 5) {
-      if (format == MIOPEN_TENSOR_NCHW) {
-        PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
-            desc_, type, dims_with_group.size(),const_cast<int*>(dims_with_group.data()),
-            const_cast<int*>(strides.data())));
-      }
+      PADDLE_ENFORCE_CUDA_SUCCESS(dynload::miopenSetTensorDescriptor(
+          desc_, type, dims_with_group.size(),const_cast<int*>(dims_with_group.data()),
+          const_cast<int*>(strides.data())));
     }
 #else
     if (dims.size() == 4) {
