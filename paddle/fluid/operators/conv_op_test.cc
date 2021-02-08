@@ -27,18 +27,18 @@ namespace paddle {
 namespace operators {
 
 // input
-const int batch_size = 100;
+const int batch_size = 128;
 const int input_channel = 3;
-const int input_height = 1;
-const int input_width = 1;
+const int input_height = 224;
+const int input_width = 224;
 // filter
-const int output_channel = 120;
-const int groups = 3;
-const int kernel_h = 1;
-const int kernel_w = 1;
+const int output_channel = 64;
+const int groups = 1;
+const int kernel_h = 7;
+const int kernel_w = 7;
 // attr
-const int conv_stride = 1;
-const int conv_padding = 0;
+const int conv_stride = 2;
+const int conv_padding = 3;
 const int conv_dilation = 1;
 const std::string padding_algorithm = "EXPLICIT";
 const std::string data_format = "NCHW";
@@ -226,7 +226,7 @@ TEST(test_conv2d_cudnn_op, gpu_place) {
   printf("CUDNN version is: %d\n", cudnn_version);
   platform::CUDAPlace place(0);
   platform::CUDADeviceContext ctx(place);
-  TestConv2DFwd<float>(ctx, true);
+  // TestConv2DFwd<float>(ctx, true);
   TestConv2DGrad<float>(ctx, true);
 }
 #endif

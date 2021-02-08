@@ -304,8 +304,10 @@ class Pool2dFunctor<platform::CUDADeviceContext, PoolProcess, T> {
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
 
+    VLOG(3) << "====== Pool2dFunctor 1 ===========";
+
 #ifdef __HIPCC__
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), grid, threads, 0, context.stream(),
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), dim3(grid), dim3(threads), 0, context.stream(),
         nthreads, input_data, input_channels, input_height, input_width,
         output_height, output_width, ksize_height, ksize_width, stride_height,
         stride_width, padding_height, padding_width, pool_process, exclusive,
@@ -357,8 +359,10 @@ class Pool2dFunctor<platform::CUDADeviceContext, PoolProcess, T> {
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
 
+    VLOG(3) << "====== Pool2dFunctor 2 ===========";
+
 #ifdef __HIPCC__
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), grid, threads, 0, context.stream(),
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), dim3(grid), dim3(threads), 0, context.stream(),
         nthreads, input_data, input_channels, input_height, input_width,
         output_height, output_width, ksize_height, ksize_width, stride_height,
         stride_width, padding_height, padding_width, pool_process, exclusive,

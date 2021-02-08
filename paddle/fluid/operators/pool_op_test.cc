@@ -25,7 +25,7 @@ namespace paddle {
 namespace operators {
 
 template <typename T>
-void TestPool2D(const platform::DeviceContext& ctx, const bool use_cudnn) {
+void TestPool2DFwd(const platform::DeviceContext& ctx, const bool use_cudnn) {
   auto place = ctx.GetPlace();
   framework::OpDesc desc;
   framework::Scope scope;
@@ -107,7 +107,7 @@ TEST(test_pool2d_op, cpu_place) {
   // framework::DDim filter_dims({4, 4, 2, 2});
   platform::CPUPlace place;
   platform::CPUDeviceContext ctx(place);
-  TestPool2D<float>(ctx, false);
+  TestPool2DFwd<float>(ctx, false);
 }
 
 #if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
@@ -116,18 +116,18 @@ TEST(test_pool2d_op, gpu_place) {
   // framework::DDim filter_dims({4, 4, 2, 2});
   platform::CUDAPlace place(0);
   platform::CUDADeviceContext ctx(place);
-  TestPool2D<float>(ctx, false);
+  TestPool2DFwd<float>(ctx, false);
 }
 
-TEST(test_pool2d_cudnn_op, gpu_place) {
-  // framework::DDim input_dims({1, 4, 2, 2});
-  // framework::DDim filter_dims({4, 4, 2, 2});
-  int cudnn_version = platform::CudnnVersion();
-  printf("CUDNN version is: %d\n", cudnn_version);
-  platform::CUDAPlace place(0);
-  platform::CUDADeviceContext ctx(place);
-  TestPool2D<float>(ctx, true);
-}
+// TEST(test_pool2d_cudnn_op, gpu_place) {
+//   // framework::DDim input_dims({1, 4, 2, 2});
+//   // framework::DDim filter_dims({4, 4, 2, 2});
+//   int cudnn_version = platform::CudnnVersion();
+//   printf("CUDNN version is: %d\n", cudnn_version);
+//   platform::CUDAPlace place(0);
+//   platform::CUDADeviceContext ctx(place);
+//   TestPool2DFwd<float>(ctx, true);
+// }
 #endif
 
 }  // namespace operators

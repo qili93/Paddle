@@ -183,7 +183,6 @@ class PoolKernel : public framework::OpKernel<T> {
           paddle::operators::math::AvgPool<T> pool_process;
           pool2d_forward(dev_ctx, *in_x, out, ksize, strides, paddings, data_format,
                          pool_process, exclusive, adaptive);
-// #endif
         }
       } break;
       case 3: {
