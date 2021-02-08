@@ -539,6 +539,9 @@ def conv2d(x,
     use_cudnn = True if (core.is_compiled_with_cuda() and
                          cudnn_version is not None) else False
 
+    if core.is_compiled_with_rocm():
+        use_cudnn = False
+
     use_mkldnn = core.globals()["FLAGS_use_mkldnn"]
 
     # update attrs
@@ -989,6 +992,9 @@ def conv2d_transpose(x,
 
     use_cudnn = True if (core.is_compiled_with_cuda() and
                          cudnn_version is not None) else False
+
+    if core.is_compiled_with_rocm():
+        use_cudnn = False
 
     # update attrs
     padding, padding_algorithm = _update_padding_nd(padding, channel_last, 2)
