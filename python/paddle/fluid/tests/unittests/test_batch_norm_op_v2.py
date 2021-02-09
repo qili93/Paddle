@@ -213,7 +213,7 @@ class TestBatchNormChannelLast(unittest.TestCase):
                 if core.is_compiled_with_rocm():
                     self.assertEqual(
                         np.allclose(
-                            y1.numpy(), y2.numpy(), atol=1e-06), True)
+                            y1.numpy(), y2.numpy(), atol=1e-07), True)
                 else:
                     self.assertEqual(np.allclose(y1.numpy(), y2.numpy()), True)
 
@@ -232,7 +232,7 @@ class TestBatchNormChannelLast(unittest.TestCase):
                 if core.is_compiled_with_rocm():
                     self.assertEqual(
                         np.allclose(
-                            y1.numpy(), y2.numpy(), atol=1e-06), True)
+                            y1.numpy(), y2.numpy(), atol=1e-07), True)
                 else:
                     self.assertEqual(np.allclose(y1.numpy(), y2.numpy()), True)
 
