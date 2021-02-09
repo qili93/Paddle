@@ -93,8 +93,13 @@ __global__ void KernelPool2DGrad(
     const int stride_width, const int padding_height, const int padding_width,
     PoolProcess pool_process, bool exclusive, bool adaptive, T* input_grad,
     bool channel_last = false) {
+#ifdef __HIPCC__
+  for (int index = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; index < nthreads;
+       index += hipBlockDim_x * hipGridDim_x) {
+#else
   for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < nthreads;
        index += blockDim.x * gridDim.x) {
+#endif
     int w_offset, h_offset, offsetC, batch_idx;
     if (!channel_last) { /* NCHW */
       w_offset = index % input_width + padding_width;
@@ -304,10 +309,9 @@ class Pool2dFunctor<platform::CUDADeviceContext, PoolProcess, T> {
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
 
-    VLOG(3) << "====== Pool2dFunctor 1 ===========";
-
 #ifdef __HIPCC__
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), dim3(grid), dim3(threads), 0, context.stream(),
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), 
+        dim3(grid), dim3(threads), 0, context.stream(),
         nthreads, input_data, input_channels, input_height, input_width,
         output_height, output_width, ksize_height, ksize_width, stride_height,
         stride_width, padding_height, padding_width, pool_process, exclusive,
@@ -359,10 +363,9 @@ class Pool2dFunctor<platform::CUDADeviceContext, PoolProcess, T> {
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
 
-    VLOG(3) << "====== Pool2dFunctor 2 ===========";
-
 #ifdef __HIPCC__
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), dim3(grid), dim3(threads), 0, context.stream(),
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2D<PoolProcess, T>), 
+        dim3(grid), dim3(threads), 0, context.stream(),
         nthreads, input_data, input_channels, input_height, input_width,
         output_height, output_width, ksize_height, ksize_width, stride_height,
         stride_width, padding_height, padding_width, pool_process, exclusive,
@@ -469,11 +472,20 @@ class Pool2dGradFunctor<platform::CUDADeviceContext, PoolProcess, T> {
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
 
+#ifdef __HIPCC__
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelPool2DGrad<PoolProcess, T>), 
+        dim3(grid), dim3(threads), 0, context.stream(),
+        nthreads, input_data, output_data, output_grad_data, input_channels,
+        input_height, input_width, output_height, output_width, ksize_height,
+        ksize_width, stride_height, stride_width, padding_height, padding_width,
+        pool_process, exclusive, adaptive, input_grad_data, channel_last);
+#else
     KernelPool2DGrad<PoolProcess, T><<<grid, threads, 0, context.stream()>>>(
         nthreads, input_data, output_data, output_grad_data, input_channels,
         input_height, input_width, output_height, output_width, ksize_height,
         ksize_width, stride_height, stride_width, padding_height, padding_width,
         pool_process, exclusive, adaptive, input_grad_data, channel_last);
+#endif
   }
 };
 
@@ -518,12 +530,20 @@ class MaxPool2dGradFunctor<platform::CUDADeviceContext, T> {
     int blocks = (nthreads + 1024 - 1) / 1024;
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
-
+#ifdef __HIPCC__
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelMaxPool2DGrad<T>),
+        grid, threads, 0, context.stream(),
+        nthreads, input_data, output_data, output_grad_data, input_channels,
+        input_height, input_width, output_height, output_width, ksize_height,
+        ksize_width, stride_height, stride_width, padding_height, padding_width,
+        input_grad_data);
+#else
     KernelMaxPool2DGrad<T><<<grid, threads, 0, context.stream()>>>(
         nthreads, input_data, output_data, output_grad_data, input_channels,
         input_height, input_width, output_height, output_width, ksize_height,
         ksize_width, stride_height, stride_width, padding_height, padding_width,
         input_grad_data);
+#endif
   }
   void operator()(const platform::CUDADeviceContext& context,
                   const framework::Tensor& input, 
@@ -566,12 +586,20 @@ class MaxPool2dGradFunctor<platform::CUDADeviceContext, T> {
     int blocks = (nthreads + 1024 - 1) / 1024;
     dim3 threads(1024, 1);
     dim3 grid(blocks, 1);
-
+#ifdef __HIPCC__
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(KernelMaxPool2DGrad<T>),
+        grid, threads, 0, context.stream(),
+        nthreads, input_data, output_data, output_grad_data, input_channels,
+        input_height, input_width, output_height, output_width, ksize_height,
+        ksize_width, stride_height, stride_width, padding_height, padding_width,
+        input_grad_data, channel_last);
+#else
     KernelMaxPool2DGrad<T><<<grid, threads, 0, context.stream()>>>(
         nthreads, input_data, output_data, output_grad_data, input_channels,
         input_height, input_width, output_height, output_width, ksize_height,
         ksize_width, stride_height, stride_width, padding_height, padding_width,
         input_grad_data, channel_last);
+#endif
   }
 };
 
