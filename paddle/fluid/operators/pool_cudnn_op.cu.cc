@@ -201,18 +201,17 @@ class PoolCUDNNOpKernel : public framework::OpKernel<T> {
     ScalingParamType<T> alpha = 1.0f, beta = 0.0f;
 
 #ifdef PADDLE_WITH_HIP
-    size_t workspace_size = 0;
-    void * workspace_ptr = nullptr;
-    PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenPoolingGetWorkSpaceSize(
-          cudnn_output_desc, &workspace_size));
-    if(workspace_size > 0) {
-      platform::miopenWorkspace miopen_workspace(workspace_size);
-      workspace_ptr = miopen_workspace.data;
-    }
+    char * pool_workspace;
+    size_t pool_worksize = 0; 
+    PADDLE_ENFORCE_CUDA_SUCCESS(
+        platform::dynload::miopenPoolingGetWorkSpaceSizeV2(cudnn_pool_desc, cudnn_output_desc, &pool_worksize));
+    PADDLE_ENFORCE_CUDA_SUCCESS(hipMalloc(&pool_workspace, pool_worksize));
     PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenPoolingForward(
         handle, cudnn_pool_desc, &alpha, cudnn_input_desc,
         tranformed_input_data, &beta, cudnn_output_desc,
-        tranformed_output_data, false, workspace_ptr, workspace_size));
+        tranformed_output_data,
+        false, pool_workspace, pool_worksize));
+    PADDLE_ENFORCE_CUDA_SUCCESS(hipFree(pool_workspace));
 #else
     PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnPoolingForward(
         handle, cudnn_pool_desc, &alpha, cudnn_input_desc,
@@ -438,18 +437,16 @@ class PoolCUDNNGradOpKernel : public framework::OpKernel<T> {
           transformed_input_grad.dims(), ctx.GetPlace());
       // Because beta is zero, it is unnecessary to reset input_grad.
 #ifdef PADDLE_WITH_HIP
-      size_t workspace_size = 0;
-      void * workspace_ptr = nullptr;
-      PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenPoolingGetWorkSpaceSize(
-          cudnn_output_desc, &workspace_size));
-      if(workspace_size > 0) {
-        platform::miopenWorkspace miopen_workspace(workspace_size);
-        workspace_ptr = miopen_workspace.data;
-      }
+      char * pool_workspace;
+      size_t pool_worksize = 0; 
+      PADDLE_ENFORCE_CUDA_SUCCESS(
+          platform::dynload::miopenPoolingGetWorkSpaceSizeV2(cudnn_pool_desc, cudnn_output_desc, &pool_worksize));
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipMalloc(&pool_workspace, pool_worksize));
       PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::miopenPoolingBackward(
           handle, cudnn_pool_desc, &alpha, cudnn_output_desc, output_data,
           cudnn_output_desc, output_grad_data, cudnn_input_desc, input_data,
-          &beta, cudnn_input_desc, input_grad_data, workspace_ptr));
+          &beta, cudnn_input_desc, input_grad_data, pool_workspace));
+      PADDLE_ENFORCE_CUDA_SUCCESS(hipFree(pool_workspace));
 #else
       PADDLE_ENFORCE_CUDA_SUCCESS(platform::dynload::cudnnPoolingBackward(
           handle, cudnn_pool_desc, &alpha, cudnn_output_desc, output_data,
