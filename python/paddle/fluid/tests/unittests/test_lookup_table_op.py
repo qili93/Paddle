@@ -44,6 +44,7 @@ class TestLookupTableOp(OpTest):
         self.check_grad(['W'], 'Out', no_grad_set=set('Ids'))
 
 
+'''
 class TestLookupTableOpWithTensorIds(OpTest):
     def setUp(self):
         self.op_type = "lookup_table"
@@ -85,8 +86,7 @@ class TestLookupTableOpWithTensorIdsAndPadding(TestLookupTableOpWithTensorIds):
         self.outputs['Out'][np.squeeze(ids == padding_idx)] = np.zeros(31)
         self.attrs = {'padding_idx': cpt.long_type(padding_idx)}
         self.check_output()
-
-
+'''
 '''
 class TestLookupTableWIsSelectedRows(unittest.TestCase):
     def prepare_ids(self, scope, place):
