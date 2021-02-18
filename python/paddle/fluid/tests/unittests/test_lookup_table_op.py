@@ -24,6 +24,9 @@ import paddle.fluid as fluid
 from paddle.fluid import Program, program_guard
 import paddle.nn.functional as F
 
+import paddle
+paddle.enable_static()
+
 
 class TestLookupTableOp(OpTest):
     def setUp(self):
