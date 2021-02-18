@@ -22,6 +22,8 @@ import paddle.fluid as fluid
 import paddle.fluid.layers as layers
 import paddle
 
+paddle.enable_static()
+
 
 # Situation 1: starts(list, no tensor), ends(list, no tensor)
 # 1.1 without attr(decrease)
