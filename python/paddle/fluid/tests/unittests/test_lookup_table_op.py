@@ -86,8 +86,8 @@ class TestLookupTableOpWithTensorIdsAndPadding(TestLookupTableOpWithTensorIds):
         self.outputs['Out'][np.squeeze(ids == padding_idx)] = np.zeros(31)
         self.attrs = {'padding_idx': cpt.long_type(padding_idx)}
         self.check_output()
-'''
-'''
+
+
 class TestLookupTableWIsSelectedRows(unittest.TestCase):
     def prepare_ids(self, scope, place):
         ids_tensor = scope.var('Ids').get_tensor()
@@ -183,8 +183,7 @@ class TestEmbedOpError(unittest.TestCase):
 
             input3 = fluid.data(name='x3', shape=[4, 1], dtype='int64')
             fluid.layers.embedding(input=input3, size=(10, 64), dtype='float16')
-'''
-'''
+
 class TestLookupTableOpInt8(OpTest):
     def setUp(self):
         self.op_type = "lookup_table"
@@ -251,8 +250,7 @@ class TestLookupTableOpWithTensorIdsAndPaddingInt8(
         # Since paddings are not trainable and fixed in forward, the gradient of
         # paddings makes no sense and we don't test the gradient here.
         pass
-'''
-'''
+
 class TestLookupTableWIsSelectedRowsInt8(unittest.TestCase):
     def prepare_ids(self, scope, place):
         ids_tensor = scope.var('Ids').get_tensor()
