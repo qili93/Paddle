@@ -84,17 +84,6 @@ class TestSliceApiWithLoDTensorArray(unittest.TestCase):
                                      'x2': self.data},
                              fetch_list=[output] + g_vars)
 
-    def test_case_1(self):
-        main_program = fluid.Program()
-        self.set_program_and_run(main_program, 1)
-
-        self.assertTrue(self.sliced_arr.type == core.VarDesc.VarType.LOD_TENSOR)
-        self.assertEqual(self.sliced_arr.shape, self.shape)
-        self.assertTrue(np.array_equal(self.out, self.data))
-        self.assertTrue(np.array_equal(self.g_x0, np.ones_like(self.data)))
-        self.assertTrue(np.array_equal(self.g_x1, np.zeros_like(self.data)))
-        self.assertTrue(np.array_equal(self.g_x2, np.zeros_like(self.data)))
-
     def test_case_2(self):
         main_program = fluid.Program()
         self.set_program_and_run(main_program, 2)
