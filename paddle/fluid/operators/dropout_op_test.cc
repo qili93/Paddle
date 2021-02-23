@@ -12,95 +12,110 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 #include <string>
-#include <thread>  // NOLINT
-#include <vector>
 
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "paddle/fluid/framework/op_registry.h"
-#include "paddle/fluid/framework/operator.h"
-#include "paddle/fluid/framework/program_desc.h"
-#include "paddle/fluid/operators/dropout_op.h"
-#include "paddle/fluid/operators/math/math_function.h"
-#include "paddle/fluid/string/printf.h"
-
-namespace f = paddle::framework;
-namespace p = paddle::platform;
-namespace m = paddle::operators::math;
 
 USE_OP(dropout);
+USE_OP(dropout_grad);
 
-void Compare(f::Scope* scope, const p::DeviceContext& ctx) {
-  // init
-  auto var = scope->Var("X");
-  auto tensor = var->GetMutable<f::LoDTensor>();
-  tensor->Resize({10, 10});
+namespace paddle {
+namespace operators {
 
-  std::vector<float> init;
-  for (int64_t i = 0; i < 10 * 10; ++i) {
-    init.push_back(1.0);
+template <typename T>
+static void feed_tensor_data(const platform::DeviceContext& ctx, 
+                             const framework::DDim dims,
+                             framework::LoDTensor* tensor) {
+  size_t numel = static_cast<size_t>(framework::product(dims));
+  std::vector<T> data(numel);
+  for (size_t i = 0; i < numel; ++i) {
+    data[i] = 1;
   }
+  framework::TensorFromVector(data, ctx, tensor);
+  tensor->Resize(dims);
+}
 
-  TensorFromVector(init, ctx, tensor);
+template <typename T>
+static void print_tensor_data(const paddle::platform::DeviceContext& ctx,
+                             paddle::framework::LoDTensor* tensor,
+                             const char * name) {
+  size_t numel = static_cast<size_t>(paddle::framework::product(tensor->dims()));
+  std::vector<T> data(numel);
+  paddle::framework::TensorToVector(*tensor, ctx, &data);
 
+  printf("=============%s============\n", name);
+  size_t stride = tensor->dims()[1];
+  size_t index = 0;
+  while(index < numel) {
+    printf("%2.1f ", data[index]);
+    if((index+1) % stride == 0) printf("\n");
+    index ++;
+  }
+}
+
+const int input_height = 32;
+const int input_width = 64;
+const int input_numel = input_height * input_width;
+const float dropout_prob = 0.0;
+const std::string dropout_implementation = "downgrade_in_infer";
+const bool fix_seed = false;
+const int seed = 0;
+
+template <typename T>
+void TestDropOut(const platform::DeviceContext& ctx, const bool use_cudnn = false) {
   auto place = ctx.GetPlace();
-  auto out_var = scope->Var("Out");
-  auto out_tensor = out_var->GetMutable<f::LoDTensor>();
-  out_tensor->Resize({10, 10});
-  out_tensor->mutable_data<float>(place);  // allocate
+  framework::Scope scope;
+  framework::OpDesc desc_fwd;
+  framework::OpDesc desc_bwd;
 
-  auto mask_var = scope->Var("Mask");
-  auto mask_tensor = mask_var->GetMutable<f::LoDTensor>();
-  mask_tensor->Resize({10, 10});
-  mask_tensor->mutable_data<float>(place);  // allocate
+  framework::DDim input_dims({input_height, input_width});
 
-  // run
-  f::AttributeMap attrs;
-  float dropout_prob = 0.5;
-  attrs.insert({"fix_seed", 1});
-  attrs.insert({"seed", 3});
-  attrs.insert({"dropout_prob", dropout_prob});
-  auto dropout_op = f::OpRegistry::CreateOp(
-      "dropout", {{"X", {"X"}}}, {{"Out", {"Out"}}, {"Mask", {"Mask"}}}, attrs);
+  // --------------- forward ----------------------
+  desc_fwd.SetType("dropout");
+  desc_fwd.SetInput("X", {"X"});
+  desc_fwd.SetOutput("Out", {"Out"});
+  desc_fwd.SetOutput("Mask", {"Mask"});
+  desc_fwd.SetAttr("dropout_prob", dropout_prob);
+  desc_fwd.SetAttr("dropout_implementation", dropout_implementation);
+  desc_fwd.SetAttr("is_test", false);
+  desc_fwd.SetAttr("fix_seed", fix_seed);
+  desc_fwd.SetAttr("seed", seed);
+  desc_fwd.SetAttr("use_cudnn", false);
+  desc_fwd.SetAttr("use_mkldnn", false);
 
-  dropout_op->Run(*scope, place);
+  auto input_tensor = scope.Var("X")->GetMutable<framework::LoDTensor>();
+  auto output_tensor = scope.Var("Out")->GetMutable<framework::LoDTensor>();
+  auto mask_tensor = scope.Var("Mask")->GetMutable<framework::LoDTensor>();
 
-  std::vector<float> out_vec;
-  TensorToVector(*out_tensor, ctx, &out_vec);
+  // feed input data
+  feed_tensor_data<T>(ctx, input_dims, input_tensor);
 
-  std::vector<float> std_out = {
-      0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1,
-      1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0,
-      1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1,
-      1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0,
-      1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1};
+  auto op_fwd = framework::OpRegistry::CreateOp(desc_fwd);
 
-  EXPECT_EQ(out_vec.size(), std_out.size());
-  for (uint32_t i = 0; i < out_vec.size(); i++) {
-    EXPECT_EQ(out_vec[i], std_out[i]);
-  }
+  LOG(INFO) << op_fwd->DebugStringEx(&scope);
+  op_fwd->Run(scope, place);
+  platform::DeviceContextPool::Instance().Get(place)->Wait();
+  LOG(INFO) << op_fwd->DebugStringEx(&scope);
+
+  // get output
+  print_tensor_data<T>(ctx, output_tensor, "output");
 }
 
-// TODO(wyi): Due to
-// https://github.com/PaddlePaddle/Paddle/issues/9507, I temporarily
-// disable this test to remove the prevention of the merge of
-// unrelated PRs.
-/*
-TEST(Dropout, CPUDense) {
-  f::Scope scope;
-  p::CPUPlace place;
-  p::CPUDeviceContext ctx(place);
-  Compare(scope, ctx);
+TEST(test_dropout_op, cpu_place) {
+  platform::CPUPlace place;
+  platform::CPUDeviceContext ctx(place);
+  TestDropOut<float>(ctx, false);
 }
 
-TEST(Dropout, GPUDense) {
-  f::Scope scope;
-  p::CUDAPlace place;
-  p::CUDADeviceContext ctx(place);
-  Compare(scope, ctx);
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+TEST(test_dropout_op, gpu_place) {
+  platform::CUDAPlace place(0);
+  platform::CUDADeviceContext ctx(place);
+  TestDropOut<float>(ctx, false);
 }
-*/
+#endif
+
+}  // namespace operators
+}  // namespace paddle
