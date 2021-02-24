@@ -47,7 +47,7 @@ class TestConvDoubleGradCheck(unittest.TestCase):
 
     def test_grad(self):
         paddle.enable_static()
-        places = [fluid.CPUPlace()]
+        # places = [fluid.CPUPlace()]
         places = []
 
         if core.is_compiled_with_cuda():
