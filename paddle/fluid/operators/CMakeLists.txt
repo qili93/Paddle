@@ -163,6 +163,7 @@ cc_test(op_debug_string_test SRCS op_debug_string_test.cc DEPS elementwise_add_o
 cc_test(test_conv_op SRCS conv_op_test.cc DEPS op_registry conv_op scope device_context enforce executor vol2col im2col depthwise_conv)
 cc_test(test_conv_depth_op SRCS conv_op_depth_test.cc DEPS op_registry conv_op scope device_context enforce executor vol2col im2col depthwise_conv)
 cc_test(test_pool_op SRCS pool_op_test.cc DEPS op_registry pool_op scope device_context enforce executor pooling)
+cc_test(test_softmax_with_cross_entropy_op SRCS softmax_with_cross_entropy_op_test.cc DEPS op_registry softmax_with_cross_entropy_op scope device_context enforce executor softmax cross_entropy)
 
 if(WITH_MKLDNN)
 include(mkldnn/inplace_op_tests.cmake)
