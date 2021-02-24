@@ -21,6 +21,9 @@ import paddle.fluid.core as core
 from op_test import OpTest
 import paddle.fluid as fluid
 
+import paddle
+paddle.enable_static()
+
 
 def conv3d_forward_naive(input,
                          filter,
@@ -783,6 +786,7 @@ create_test_cudnn_channel_last_class(TestWith1x1_AsyPadding)
 # --------- test python API ---------------
 class TestConv3DAPI(unittest.TestCase):
     def test_api(self):
+        paddle.enable_static()
 
         input_NDHWC = fluid.layers.data(
             name="input_NDHWC",
@@ -859,6 +863,8 @@ class TestConv3DAPI(unittest.TestCase):
 
 class TestConv3DAPI_Error(unittest.TestCase):
     def test_api(self):
+        paddle.enable_static()
+
         input = fluid.layers.data(
             name="input",
             shape=[2, 5, 5, 5, 4],
