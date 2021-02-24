@@ -843,6 +843,9 @@ class CUDNNConvDoubleGradOpKernel : public framework::OpKernel<T> {
     auto ddX = ctx.Input<Tensor>("DDInput");
     auto ddW = ctx.Input<Tensor>("DDFilter");
 
+    VLOG(3) << "X->type(): " << X->type();
+    VLOG(3) << "W->type(): " << W->type();
+
     auto ddO = ctx.Output<Tensor>("DDOutput");
     auto dW = ctx.Output<Tensor>("DFilter");
     auto dX = ctx.Output<Tensor>("DInput");
