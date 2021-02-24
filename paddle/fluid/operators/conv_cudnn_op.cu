@@ -319,10 +319,10 @@ class CUDNNConvOpKernel : public framework::OpKernel<T> {
 #endif
 
     // ------------------- cudnn conv forward ---------------------
-    VLOG(3) << "323";
+    VLOG(3) << "ScalingParamType";
     ScalingParamType<T> alpha = 1.0f;
     ScalingParamType<T> beta = 0.0f;
-    VLOG(3) << "324";
+    VLOG(3) << "ScalingParamType";
 
 // NOTE(zhiqiu): inplace addto is not supportted in double grad yet.
 // ScalingParamType<T> beta = ctx.Attr<bool>("use_addto") ? 1.0f : 0.0f;
@@ -710,10 +710,10 @@ class CUDNNConvGradOpKernel : public framework::OpKernel<T> {
     }
 
     // ------------------- cudnn conv backward data ---------------------
-    VLOG(3) << "711";
+    VLOG(3) << "ScalingParamType";
     ScalingParamType<T> alpha = 1.0f;
     ScalingParamType<T> beta = ctx.Attr<bool>("use_addto") ? 1.0f : 0.0f;
-    VLOG(3) << "712";
+    VLOG(3) << "ScalingParamType";
     VLOG(4) << "Conv_grad: use_addto = " << ctx.Attr<bool>("use_addto");
 
     if (input_grad) {
@@ -777,9 +777,9 @@ class CUDNNConvGradOpKernel : public framework::OpKernel<T> {
     }
 
     // filter_grad do not use inplace addto.
-    VLOG(3) << "777";
+    VLOG(3) << "ScalingParamType";
     ScalingParamType<T> beta_filter = 0.0f;
-    VLOG(3) << "778";
+    VLOG(3) << "ScalingParamType";
     // ------------------- cudnn conv backward filter ---------------------
     if (filter_grad) {
       // Because beta is zero, it is unnecessary to reset filter_grad.
@@ -1195,10 +1195,10 @@ class CUDNNConvDoubleGradOpKernel : public framework::OpKernel<T> {
     int group_offset_out = o_c / groups * o_h * o_w * o_d;
     int group_offset_filter = W->numel() / groups;
 
-    VLOG(3) << "1193";
+    VLOG(3) << "ScalingParamType";
     ScalingParamType<T> alpha = 1.0f;
     ScalingParamType<T> beta = 0.0f;
-    VLOG(3) << "1193";
+    VLOG(3) << "ScalingParamType";
 
     // NOTE(zhiqiu): inplace addto is not supportted in double grad yet.
     // ScalingParamType<T> beta = ctx.Attr<bool>("use_addto") ? 1.0f :
