@@ -235,6 +235,8 @@ class TestConv3DOp(OpTest):
         self.use_mkldnn = False
         self.data_format = "AnyLayout"
         self.dtype = np.float64
+        if core.is_compiled_with_rocm():
+            self.dtype = np.float32
         self.init_kernel_type()
         self.init_group()
         self.init_dilation()
@@ -526,6 +528,8 @@ class TestConv3DOp_2(OpTest):
         self.use_mkldnn = False
         self.data_format = "NCDHW"
         self.dtype = np.float64
+        if core.is_compiled_with_rocm():
+            self.dtype = np.float32
         self.init_kernel_type()
         self.init_group()
         self.init_dilation()
