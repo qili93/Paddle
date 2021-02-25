@@ -12,7 +12,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
+#ifdef __NVCC__
 #include <cub/cub.cuh>
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
+
 #include "paddle/fluid/framework/op_registry.h"
 #include "paddle/fluid/operators/math/blas.h"
 #include "paddle/fluid/platform/cuda_device_function.h"
@@ -52,7 +58,11 @@ __global__ void InplaceAddReluAddLayerNormKernel(const T* y, const T* bias_0,
                                                  const T* scale, T* out,
                                                  T* mean, T* variance, int M,
                                                  int N, float epsilon) {
+#ifdef __HIPCC__
+  using BlockReduce = hipcub::BlockReduce<PairForLayerNorm<T>, BlockDim>;
+#else
   using BlockReduce = cub::BlockReduce<PairForLayerNorm<T>, BlockDim>;
+#endif
   __shared__ typename BlockReduce::TempStorage temp_storage;
   __shared__ T shared_mem[BlockDim + 2];
 
