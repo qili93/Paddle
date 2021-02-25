@@ -104,15 +104,18 @@ class SequenceSoftmaxGradCUDNNKernel : public framework::OpKernel<T> {
 }  // namespace paddle
 
 namespace ops = paddle::operators;
-REGISTER_OP_KERNEL(sequence_softmax, CUDNN, ::paddle::platform::CUDAPlace,
+
+#ifdef PADDLE_WITH_HIP
 // MIOPEN not support float64
-#ifndef PADDLE_WITH_HIP
-                   ops::SequenceSoftmaxCUDNNKernel<double>,
-#endif
+REGISTER_OP_KERNEL(sequence_softmax, CUDNN, ::paddle::platform::CUDAPlace,
                    ops::SequenceSoftmaxCUDNNKernel<float>);
 REGISTER_OP_KERNEL(sequence_softmax_grad, CUDNN, ::paddle::platform::CUDAPlace,
-// MIOPEN not support float64
-#ifndef PADDLE_WITH_HIP
-                   ops::SequenceSoftmaxGradCUDNNKernel<double>,
-#endif
                    ops::SequenceSoftmaxGradCUDNNKernel<float>);
+#else
+REGISTER_OP_KERNEL(sequence_softmax, CUDNN, ::paddle::platform::CUDAPlace,
+                   ops::SequenceSoftmaxCUDNNKernel<float>,
+                   ops::SequenceSoftmaxCUDNNKernel<double>);
+REGISTER_OP_KERNEL(sequence_softmax_grad, CUDNN, ::paddle::platform::CUDAPlace,
+                   ops::SequenceSoftmaxGradCUDNNKernel<float>,
+                   ops::SequenceSoftmaxGradCUDNNKernel<double>);
+#endif
