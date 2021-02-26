@@ -723,6 +723,8 @@ class TestDistBase(unittest.TestCase):
         self._save_model = False
         self._fuse_all_reduce = None
         self._setup_config()
+        self._str_visiable_dev = 'HIP_VISIBLE_DEVICES' if fluid.core.is_compiled_with_rocm(
+        ) else 'CUDA_VISIBLE_DEVICES'
 
         global DIST_UT_PORT
         if DIST_UT_PORT == 0 and os.getenv("PADDLE_DIST_UT_PORT"):
@@ -827,7 +829,7 @@ class TestDistBase(unittest.TestCase):
         if self.__use_cuda:
             cmd += " --use_cuda"
             env_local = {
-                "CUDA_VISIBLE_DEVICES": devices,
+                self._str_visiable_dev: devices,
                 "PADDLE_TRAINERS_NUM": "1",
                 "PADDLE_TRAINER_ID": "0"
             }
@@ -909,8 +911,8 @@ class TestDistBase(unittest.TestCase):
         if self.__use_cuda:
             tr0_cmd += " --use_cuda"
             tr1_cmd += " --use_cuda"
-            env0 = {"CUDA_VISIBLE_DEVICES": "0"}
-            env1 = {"CUDA_VISIBLE_DEVICES": "1"}
+            env0 = {self._str_visiable_dev: "0"}
+            env1 = {self._str_visiable_dev: "1"}
         else:
             env0 = {'CPU_NUM': '1'}
             env1 = {'CPU_NUM': '1'}
@@ -986,7 +988,7 @@ class TestDistBase(unittest.TestCase):
             tr_cmd += " --use_cuda"
             env.update({
                 "FLAGS_selected_gpus": "{}".format(0),
-                "CUDA_VISIBLE_DEVICES": "{}".format(trainer_id),
+                self._str_visiable_dev: "{}".format(trainer_id),
                 "PADDLE_TRAINERS_NUM": "{}".format(trainer_num),
                 "PADDLE_TRAINER_ID": "{}".format(trainer_id),
                 "PADDLE_TRAINER_ENDPOINTS": self._ps_endpoints,
@@ -1112,7 +1114,7 @@ class TestDistBase(unittest.TestCase):
             tr_cmd, tr_env = self._get_nccl2_trainer_cmd(
                 model, worker_endpoints[i], update_method, i, trainer_num)
             tr_env.update(envs)
-            tr_env['CUDA_VISIBLE_DEVICES'] = "0,1"
+            tr_env[self._str_visiable_dev] = "0,1"
             tr_env['NCCL_SHM_DISABLE'] = '1'
             tr_env['FLAGS_selected_gpus'] = str(i)
             tr_env['FLAGS_cudnn_deterministic'] = '0'
