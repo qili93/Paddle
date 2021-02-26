@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#include <cuda_runtime.h>
 #include <algorithm>
 #include "paddle/fluid/framework/tensor.h"
 #include "paddle/fluid/framework/tensor_util.h"
@@ -30,13 +29,21 @@ __device__ inline void LayerNormSmall(T val, const kvp<T> &thread_data,
                                       const int ld, const int idx,
                                       const float *bias, const float *scale,
                                       T *output, T eps) {
+#ifdef __HIPCC__
+  using BlockReduce = hipcub::BlockReduce<kvp<T>, TPB>;
+#else
   using BlockReduce = cub::BlockReduce<kvp<T>, TPB>;
+#endif
   __shared__ typename BlockReduce::TempStorage temp_storage;
   __shared__ T mu;      // mean
   __shared__ T rsigma;  // 1 / std.dev.
 
+#ifdef __HIPCC__
+  const auto sum_kv =
+      BlockReduce(temp_storage).Reduce(thread_data, hipcub::Sum());
+#else
   const auto sum_kv = BlockReduce(temp_storage).Reduce(thread_data, cub::Sum());
-
+#endif
   if (threadIdx.x == 0) {
     mu = sum_kv.key;
     rsigma = rsqrt(sum_kv.value - mu * mu + eps);
@@ -54,12 +61,21 @@ template <typename T, int TPB>
 __device__ inline void LayerNorm(const kvp<T> &thread_data, const int ld,
                                  const int offset, const float *bias,
                                  const float *scale, T *output, T eps) {
+#ifdef __HIPCC__
+  using BlockReduce = hipcub::BlockReduce<kvp<T>, TPB>;
+#else
   using BlockReduce = cub::BlockReduce<kvp<T>, TPB>;
+#endif
   __shared__ typename BlockReduce::TempStorage temp_storage;
   __shared__ T mu;      // mean
   __shared__ T rsigma;  // 1 / std.dev.
 
+#ifdef __HIPCC__
+  const auto sum_kv =
+      BlockReduce(temp_storage).Reduce(thread_data, hipcub::Sum());
+#else
   const auto sum_kv = BlockReduce(temp_storage).Reduce(thread_data, cub::Sum());
+#endif
 
   if (threadIdx.x == 0) {
     mu = sum_kv.key;
@@ -80,12 +96,21 @@ template <typename T, typename T2, int TPB>
 __device__ inline void LayerNorm2(const kvp<T> &thread_data, const int ld,
                                   const int offset, const float2 *bias,
                                   const float2 *scale, T2 *output, T eps) {
+#ifdef __HIPCC__
+  using BlockReduce = hipcub::BlockReduce<kvp<T>, TPB>;
+#else
   using BlockReduce = cub::BlockReduce<kvp<T>, TPB>;
+#endif
   __shared__ typename BlockReduce::TempStorage temp_storage;
   __shared__ T mu;      // mean
   __shared__ T rsigma;  // 1 / std.dev.
 
+#ifdef __HIPCC__
+  const auto sum_kv =
+      BlockReduce(temp_storage).Reduce(thread_data, hipcub::Sum());
+#else
   const auto sum_kv = BlockReduce(temp_storage).Reduce(thread_data, cub::Sum());
+#endif
 
   if (threadIdx.x == 0) {
     mu = sum_kv.key;
@@ -109,13 +134,18 @@ __global__ void EmbEltwiseLayernormKernel(int hidden, const int64_t *ids,
                                           const float *scale, const float *bias,
                                           const int64_t *embs, T *output,
                                           float eps, int input_num) {
-  cub::Sum pair_sum;
-  // blockIdx.x: position in the sequence
-  // blockIdx.y: batch
-  // gridDim.x: Seq
-  // gridDim.y: Batch
+// blockIdx.x: position in the sequence
+// blockIdx.y: batch
+// gridDim.x: Seq
+// gridDim.y: Batch
 
+#ifdef __HIPCC__
+  hipcub::Sum pair_sum;
+  HIP_DYNAMIC_SHARED(int64_t, array_id);
+#else
+  cub::Sum pair_sum;
   extern __shared__ int64_t array_id[];
+#endif
 
   const T rhidden = T(1.f) / T(hidden);
   const int64_t seq_pos = blockIdx.y + blockIdx.x * gridDim.y;
@@ -145,6 +175,8 @@ __global__ void EmbEltwiseLayernormKernel(int hidden, const int64_t *ids,
   LayerNorm<T, TPB>(thread_data, hidden, out_offset, bias, scale, output, eps);
 }
 
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#ifndef __HIPCC__
 template <>
 __global__ void EmbEltwiseLayernormKernel<half, 256>(
     int hidden, const int64_t *ids, const float *scale, const float *bias,
@@ -188,12 +220,13 @@ __global__ void EmbEltwiseLayernormKernel<half, 256>(
                        eps);
 #endif
 }
+#endif
 
 template <typename T>
 void EmbEltwiseLayerNormFunctor<T>::operator()(
     int batch, int seq_len, int hidden, const int64_t *ids, const float *scale,
     const float *bias, const int64_t *embs, T *output, float eps, int input_num,
-    cudaStream_t stream) {
+    gpuStream_t stream) {
   const unsigned tpb = 256;
   const dim3 grid(seq_len, batch, 1);
   const dim3 block(tpb, 1, 1);
@@ -205,7 +238,8 @@ void EmbEltwiseLayerNormFunctor<T>::operator()(
 template class EmbEltwiseLayerNormFunctor<float>;
 
 // device function 'operator()' is not supportted until cuda 10.0
-#if CUDA_VERSION >= 10000
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#if defined(PADDLE_WITH_CUDA) && CUDA_VERSION >= 10000
 template class EmbEltwiseLayerNormFunctor<half>;
 #endif
 
@@ -230,6 +264,8 @@ __global__ void SoftmaxKernelWithEltadd(T *qk_buf_, const T *bias_qk_,
     qk_buf_[threadIdx.x + qk_offset] = (T)(qk_tmp / sum_val);
 }
 
+// HIP defined __HIP_NO_HALF_CONVERSIONS__
+#ifndef __HIPCC__
 template <>
 __global__ void SoftmaxKernelWithEltadd<half>(
     half *qk_buf_, const half *bias_qk_, const int batch_size,
@@ -251,6 +287,7 @@ __global__ void SoftmaxKernelWithEltadd<half>(
     qk_buf_[threadIdx.x + qk_offset] = (half)(qk_tmp / sum_val);
 #endif
 }
+#endif
 
 template <typename T>
 __global__ void SoftmaxKernelWithEltadd2(T *qk_buf_, const T *bias_qk_,
@@ -282,7 +319,9 @@ __global__ void SoftmaxKernelWithEltadd2<half2>(
     half2 *qk_buf_, const half2 *bias_qk_, const int batch_size,
     const int head_num, const int seq_len, const unsigned mask) {
 // operator "+" of half only suppotted after cuda version 10.0
-#if CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#if defined(PADDLE_WITH_CUDA) || \
+    (CUDA_ARCH_FP16_SUPPORTED(__CUDA_ARCH__) && CUDA_VERSION >= 10000)
   int qk_offset = blockIdx.x * seq_len;
   int idx = threadIdx.x;
   assert(blockDim.x % 32 == 0);
@@ -398,7 +437,8 @@ void MultiHeadGPUComputeFunctor<T>::operator()(
 template class MultiHeadGPUComputeFunctor<float>;
 
 // device function 'operator()' is not supportted until cuda 10.0
-#if CUDA_VERSION >= 10000
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#if defined(PADDLE_WITH_CUDA) || CUDA_VERSION >= 10000
 template class MultiHeadGPUComputeFunctor<half>;
 #endif
 
@@ -409,7 +449,11 @@ __global__ void SkipLayerNormSmallKernel(int num, int hidden, const T *input1,
                                          float eps) {
   const T rld = T(1) / T(hidden);
   const int offset = blockIdx.x * hidden;
+#ifdef __HIPCC__
+  hipcub::Sum pair_sum;
+#else
   cub::Sum pair_sum;
+#endif
   kvp<T> thread_data(0, 0);
   const int idx = offset + threadIdx.x;
   T val = 0;
@@ -422,6 +466,8 @@ __global__ void SkipLayerNormSmallKernel(int num, int hidden, const T *input1,
                          eps);
 }
 
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#ifndef __HIPCC__
 template <>
 __global__ void SkipLayerNormSmallKernel<half, 32>(
     int num, int hidden, const half *input1, const half *input2, half *output,
@@ -484,6 +530,7 @@ __global__ void SkipLayerNormSmallKernel<half, 384>(
                             eps);
 #endif
 }
+#endif
 
 template <typename T, unsigned TPB>
 __global__ void SkipLayerNormKernel(int num, int hidden, const T *input1,
@@ -492,7 +539,11 @@ __global__ void SkipLayerNormKernel(int num, int hidden, const T *input1,
                                     float eps) {
   const T rld = T(1) / T(hidden);
   const int offset = blockIdx.x * hidden;
+#ifdef __HIPCC__
+  hipcub::Sum pair_sum;
+#else
   cub::Sum pair_sum;
+#endif
   kvp<T> thread_data(0, 0);
 
   for (int it = threadIdx.x; it < hidden; it += TPB) {
@@ -505,6 +556,8 @@ __global__ void SkipLayerNormKernel(int num, int hidden, const T *input1,
   LayerNorm<T, TPB>(thread_data, hidden, offset, bias, scale, output, eps);
 }
 
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#ifndef __HIPCC__
 template <>
 __global__ void SkipLayerNormKernel<half, 256>(int num, int hidden,
                                                const half *input1,
@@ -527,6 +580,7 @@ __global__ void SkipLayerNormKernel<half, 256>(int num, int hidden,
   LayerNorm<half, 256>(thread_data, hidden, offset, bias, scale, output, eps);
 #endif
 }
+#endif
 
 template <typename T, typename T2, unsigned TPB>
 __global__ void SkipLayerNormKernel2(int num, int hidden, const T2 *input1,
@@ -535,7 +589,11 @@ __global__ void SkipLayerNormKernel2(int num, int hidden, const T2 *input1,
                                      float eps) {
   const T rld = T(0.5f / hidden);  // because hidden is hidden/2
   const int offset = blockIdx.x * hidden;
+#ifdef __HIPCC__
+  hipcub::Sum pair_sum;
+#else
   cub::Sum pair_sum;
+#endif
   kvp<T> thread_data(0, 0);
 
   for (int it = threadIdx.x; it < hidden; it += TPB) {
@@ -549,6 +607,8 @@ __global__ void SkipLayerNormKernel2(int num, int hidden, const T2 *input1,
   LayerNorm2<T, T2, TPB>(thread_data, hidden, offset, bias, scale, output, eps);
 }
 
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#ifndef __HIPCC__
 template <>
 __global__ void SkipLayerNormKernel2<half, half2, 256>(
     int num, int hidden, const half2 *input1, const half2 *input2,
@@ -572,13 +632,13 @@ __global__ void SkipLayerNormKernel2<half, half2, 256>(
                                eps);
 #endif
 }
+#endif
 
 template <typename T>
 void SkipLayerNormFunctor<T>::operator()(const int num, const int hidden,
                                          const T *input1, const T *input2,
                                          const float *scale, const float *bias,
-                                         T *output, T eps,
-                                         cudaStream_t stream) {
+                                         T *output, T eps, gpuStream_t stream) {
   int block = num / hidden;
   if (hidden <= 32) {
     const int threads = 32;
@@ -603,6 +663,8 @@ void SkipLayerNormFunctor<T>::operator()(const int num, const int hidden,
             reinterpret_cast<float2 *>(output),
             reinterpret_cast<const float2 *>(scale),
             reinterpret_cast<const float2 *>(bias), eps);
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#ifndef __HIPCC__
       } else if (std::is_same<T, __half>::value) {
         SkipLayerNormKernel2<__half, __half2,
                              threads><<<block, threads, 0, stream>>>(
@@ -611,6 +673,7 @@ void SkipLayerNormFunctor<T>::operator()(const int num, const int hidden,
             reinterpret_cast<__half2 *>(output),
             reinterpret_cast<const float2 *>(scale),
             reinterpret_cast<const float2 *>(bias), eps);
+#endif
       } else {
         assert(false);
         // should not be here
@@ -625,7 +688,8 @@ void SkipLayerNormFunctor<T>::operator()(const int num, const int hidden,
 template class SkipLayerNormFunctor<float>;
 
 // device function 'operator()' is not supportted until cuda 10.0
-#if CUDA_VERSION >= 10000
+// HIP defined __HIP_NO_HALF_CONVERSIONS__ in hip.cmake
+#if defined(PADDLE_WITH_CUDA) || CUDA_VERSION >= 10000
 template class SkipLayerNormFunctor<half>;
 #endif
 

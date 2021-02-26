@@ -14,7 +14,12 @@ limitations under the License. */
 
 #include <algorithm>
 #include <vector>
-#include "cub/cub.cuh"
+#ifdef __NVCC__
+#include <cub/cub.cuh>
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
 #include "paddle/fluid/operators/math/depthwise_conv.h"
 #include "paddle/fluid/platform/cuda_device_function.h"
 #include "paddle/fluid/platform/cuda_primitives.h"
@@ -25,10 +30,22 @@ namespace math {
 
 template <typename T>
 __device__ __inline__ void CudaAtomicAddWithWarp(T* sum, T value) {
+#ifdef __HIPCC__
+  typedef hipcub::WarpReduce<T> WarpReduce;
+#else
   typedef cub::WarpReduce<T> WarpReduce;
-  typename WarpReduce::TempStorage temp_storage;
+#endif
+
+  __shared__ typename WarpReduce::TempStorage temp_storage;
+
+#ifdef __HIPCC__
+  int block_size = min(blockDim.x * blockDim.y * blockDim.z, warpSize);
+  value = WarpReduce(temp_storage).Sum(value, block_size);
+  if (hipcub::LaneId() == 0) platform::CudaAtomicAdd(sum, value);
+#else
   value = WarpReduce(temp_storage).Sum(value);
   if (cub::LaneId() == 0) platform::CudaAtomicAdd(sum, value);
+#endif
 }
 
 #define ARG_DEFINE_KernelDepthwiseConv                                         \
