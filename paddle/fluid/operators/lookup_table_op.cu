@@ -105,17 +105,17 @@ class LookupTableCUDAKernel : public framework::OpKernel<T> {
     auto *table = table_t->data<T>();
     auto *output = output_t->mutable_data<T>(context.GetPlace());
 
-    dim3 threads(128, 8);
+    dim3 threads(64, 4);
     dim3 grids(8, 1);
 
     if (padding_idx == -1)
       LookupTable<
-          T, 128, 8, 8,
+          T, 64, 4, 8,
           false><<<grids, threads, 0, context.cuda_device_context().stream()>>>(
           output, table, ids, N, K, D, padding_idx);
     else
       LookupTable<
-          T, 128, 8, 8,
+          T, 64, 4, 8,
           true><<<grids, threads, 0, context.cuda_device_context().stream()>>>(
           output, table, ids, N, K, D, padding_idx);
   }
@@ -185,9 +185,9 @@ class LookupTableGradCUDAKernel : public framework::OpKernel<T> {
       auto t = framework::EigenVector<T>::Flatten(*d_table_t);
       t.device(*dev_ctx.eigen_device()) = t.constant(static_cast<T>(0));
 
-      dim3 threads(128, 8);
+      dim3 threads(64, 4);
       dim3 grids(8, 1);
-      LookupTableGrad<T, 128, 8, 8><<<grids, threads, 0, dev_ctx.stream()>>>(
+      LookupTableGrad<T, 64, 4, 8><<<grids, threads, 0, dev_ctx.stream()>>>(
           d_table, d_output, ids, N, K, D);
     }
   }
