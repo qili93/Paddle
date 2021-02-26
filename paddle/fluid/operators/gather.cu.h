@@ -22,6 +22,14 @@ limitations under the License. */
 #include "paddle/fluid/platform/cuda_primitives.h"
 #include "paddle/fluid/platform/gpu_launch_config.h"
 #include "paddle/fluid/platform/place.h"
+
+#ifdef __HIPCC__
+#define HIP_KERNEL_LOOP(i, num)                             \
+  int64_t __index__ = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; \
+  for (int64_t i = __index__; __index__ < (num);             \
+       __index__ += hipBlockDim_x * hipGridDim_x, i = __index__)
+#endif
+
 namespace paddle {
 namespace operators {
 
@@ -32,7 +40,11 @@ template <typename T, typename IndexT = int>
 __global__ void GatherCUDAKernel(const T* params, const IndexT* indices,
                                  T* output, size_t index_size,
                                  size_t slice_size) {
+#ifdef __HIPCC__
+  HIP_KERNEL_LOOP(i, index_size * slice_size) {
+#else
   CUDA_KERNEL_LOOP(i, index_size * slice_size) {
+#endif
     int indices_i = i / slice_size;
     int slice_i = i - indices_i * slice_size;  // offset inside the slice
     IndexT gather_i = indices[indices_i];
@@ -46,7 +58,11 @@ __global__ void GatherNdCUDAKernel(const T* input, const int* input_dims,
                                    const IndexT* indices, T* output,
                                    size_t remain_size, size_t slice_size,
                                    size_t end_size) {
+#ifdef __HIPCC__
+  HIP_KERNEL_LOOP(i, remain_size * slice_size) {
+#else
   CUDA_KERNEL_LOOP(i, remain_size * slice_size) {
+#endif
     int indices_i = i / slice_size;
     int slice_i = i - indices_i * slice_size;  // offset inside the slice
     IndexT gather_i = 0;
@@ -108,11 +124,17 @@ void GPUGather(const platform::DeviceContext& ctx, const Tensor& src,
   int block = 512;
   int n = slice_size * index_size;
   int grid = (n + block - 1) / block;
-
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(GatherCUDAKernel<T, IndexT>),
+      grid, block, 0,
+      reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+      p_src, p_index, p_output, index_size, slice_size);
+  #else
   GatherCUDAKernel<T, IndexT><<<
       grid, block, 0,
       reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
       p_src, p_index, p_output, index_size, slice_size);
+  #endif
 }
 
 template <typename DeviceContext, typename T, typename IndexT = int>
@@ -157,12 +179,19 @@ void GPUGatherNd(const framework::ExecutionContext& context,
   int block = 512;
   int n = slice_size * remain_numel;
   int grid = (n + block - 1) / block;
-
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(GatherNdCUDAKernel<T, IndexT>),
+      grid, block, 0,
+      reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+      p_input, g_input_dims, p_index, p_output, remain_numel, slice_size,
+      end_size);
+  #else
   GatherNdCUDAKernel<T, IndexT><<<
       grid, block, 0,
       reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
       p_input, g_input_dims, p_index, p_output, remain_numel, slice_size,
       end_size);
+  #endif
 }
 
 template <typename T, typename U>
@@ -245,10 +274,17 @@ void GatherV2CUDAFunction(const Tensor* input, const Tensor* index,
   platform::GpuLaunchConfig config =
       platform::GetGpuLaunchConfig1D(ctx.cuda_device_context(), out_size);
   auto stream = ctx.cuda_device_context().stream();
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(GatherGPUKernel<T, U>),
+      config.block_per_grid, config.thread_per_block, 0, stream,
+      input_data, index_data, out_data, outer_dim_size, inner_dim_size,
+      index_size, index_dim_size, out_size);
+  #else
   GatherGPUKernel<
       T, U><<<config.block_per_grid, config.thread_per_block, 0, stream>>>(
       input_data, index_data, out_data, outer_dim_size, inner_dim_size,
       index_size, index_dim_size, out_size);
+  #endif
 }
 
 template <typename T, typename U, typename V>
@@ -292,10 +328,17 @@ void GatherV2GradCUDAFunction(const Tensor* input, const Tensor* index,
   platform::GpuLaunchConfig config =
       platform::GetGpuLaunchConfig1D(ctx.cuda_device_context(), input_size);
   auto stream = ctx.cuda_device_context().stream();
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(GatherGradGPUKernel<T, U>),
+      config.block_per_grid, config.thread_per_block, 0, stream,
+      input_data, index_data, out_data, outer_dim_size, inner_dim_size,
+      input_index_dim_size, out_index_dim_size, input_size);
+  #else
   GatherGradGPUKernel<
       T, U><<<config.block_per_grid, config.thread_per_block, 0, stream>>>(
       input_data, index_data, out_data, outer_dim_size, inner_dim_size,
       input_index_dim_size, out_index_dim_size, input_size);
+  #endif
 }
 }  // namespace operators
 }  // namespace paddle

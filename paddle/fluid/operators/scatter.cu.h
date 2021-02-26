@@ -21,6 +21,13 @@ limitations under the License. */
 #include "paddle/fluid/platform/cuda_primitives.h"
 #include "paddle/fluid/platform/place.h"
 
+#ifdef __HIPCC__
+#define HIP_KERNEL_LOOP(i, num)                             \
+  int64_t __index__ = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; \
+  for (int64_t i = __index__; __index__ < (num);             \
+       __index__ += hipBlockDim_x * hipGridDim_x, i = __index__)
+#endif
+
 namespace paddle {
 namespace operators {
 
@@ -29,7 +36,11 @@ using Tensor = framework::Tensor;
 template <typename T, typename IndexT = int>
 __global__ void ScatterInitCUDAKernel(const IndexT* indices, T* output,
                                       size_t index_size, size_t slice_size) {
+#ifdef __HIPCC__
+  HIP_KERNEL_LOOP(i, index_size * slice_size) {
+#else
   CUDA_KERNEL_LOOP(i, index_size * slice_size) {
+#endif
     int indices_i = i / slice_size;
     int slice_i = i - indices_i * slice_size;  // offset inside the slice
     IndexT scatter_i = indices[indices_i];
@@ -42,7 +53,11 @@ template <typename T, typename IndexT = int>
 __global__ void ScatterCUDAKernel(const T* params, const IndexT* indices,
                                   T* output, size_t index_size,
                                   size_t slice_size, bool overwrite) {
+#ifdef __HIPCC__
+  HIP_KERNEL_LOOP(i, index_size * slice_size) {
+#else
   CUDA_KERNEL_LOOP(i, index_size * slice_size) {
+#endif
     int indices_i = i / slice_size;
     int slice_i = i - indices_i * slice_size;  // offset inside the slice
     IndexT scatter_i = indices[indices_i];
@@ -60,7 +75,11 @@ __global__ void ScatterNdCUDAKernel(const T* update, const IndexT* indices,
                                     T* output, const int* output_dims,
                                     size_t remain_size, size_t slice_size,
                                     size_t end_size) {
+#ifdef __HIPCC__
+  HIP_KERNEL_LOOP(i, remain_size * slice_size) {
+#else
   CUDA_KERNEL_LOOP(i, remain_size * slice_size) {
+#endif
     int indices_i = i / slice_size;
     int slice_i = i - indices_i * slice_size;  // offset inside the slice
     IndexT gather_i = 0;
@@ -125,16 +144,29 @@ void GPUScatterAssign(const framework::ExecutionContext& context,
 
   // if not overwrite mode, init data
   if (!overwrite) {
+    #ifdef __HIPCC__
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(ScatterInitCUDAKernel<T, IndexT>),
+        grid, block, 0,
+        reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+        p_index, p_output, index_size, slice_size);
+    #else
     ScatterInitCUDAKernel<T, IndexT><<<
         grid, block, 0,
         reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
         p_index, p_output, index_size, slice_size);
+    #endif
   }
-
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(ScatterCUDAKernel<T, IndexT>),
+      grid, block, 0,
+      reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+      p_src, p_index, p_output, index_size, slice_size, overwrite);
+  #else
   ScatterCUDAKernel<T, IndexT><<<
       grid, block, 0,
       reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
       p_src, p_index, p_output, index_size, slice_size, overwrite);
+  #endif
 }
 
 // The function is only for scatter grad x,
@@ -162,10 +194,17 @@ void GPUScatterGradForX(const platform::DeviceContext& ctx, const Tensor& index,
           .x;
   int64_t grid = height < max_grid_dimx ? height : max_grid_dimx;
 
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(ScatterInitCUDAKernel<T, IndexT>),
+      grid, block, 0,
+      reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+      p_index, p_output, index_size, slice_size);
+  #else
   ScatterInitCUDAKernel<T, IndexT><<<
       grid, block, 0,
       reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
       p_index, p_output, index_size, slice_size);
+  #endif
 }
 
 template <typename DeviceContext, typename T, typename IndexT = int>
@@ -213,12 +252,19 @@ void GPUScatterNdAdd(const framework::ExecutionContext& context,
   int block = 512;
   int n = slice_size * remain_numel;
   int grid = (n + block - 1) / block;
-
+  #ifdef __HIPCC__
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(ScatterNdCUDAKernel<T, IndexT>),
+      grid, block, 0,
+      reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream(),
+      p_update, p_index, p_output, g_output_dims, remain_numel, slice_size,
+      end_size);
+  #else
   ScatterNdCUDAKernel<T, IndexT><<<
       grid, block, 0,
       reinterpret_cast<const platform::CUDADeviceContext&>(ctx).stream()>>>(
       p_update, p_index, p_output, g_output_dims, remain_numel, slice_size,
       end_size);
+  #endif
 }
 
 }  // namespace operators
