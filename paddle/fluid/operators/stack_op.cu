@@ -99,8 +99,13 @@ template <typename T, typename IntType>
 __global__ void UnStackCUDAKernel(const T* __restrict__ input, int pre_dim_size,
                                   int split_dim_size, int suf_dim_size,
                                   int num_split, T** output_ptrs) {
+  #ifdef __HIPCC__
+  assert(hipBlockDim_y == 1);
+  assert(hipBlockDim_z == 1);
+  #else
   assert(blockDim.y == 1);
   assert(blockDim.z == 1);
+  #endif
   // In this case they are equal
   assert(split_dim_size % num_split == 0);
 
