@@ -16,13 +16,27 @@ limitations under the License. */
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
+#ifdef __NVCC__
 #include "cub/cub.cuh"
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
 #include "paddle/fluid/framework/op_registry.h"
 #include "paddle/fluid/operators/argsort_op.h"
 #include "paddle/fluid/operators/transpose_op.h"
 #include "paddle/fluid/platform/cuda_device_function.h"
 #include "paddle/fluid/platform/cuda_primitives.h"
 
+#ifdef __HIPCC__
+namespace rocprim {
+namespace detail {
+template <>
+struct radix_key_codec_base<paddle::platform::float16>
+    : radix_key_codec_integral<paddle::platform::float16, uint16_t> {};
+}  // namespace detail
+}  // namespace rocprim
+#else
 // set cub base traits in order to handle float16
 namespace cub {
 template <>
@@ -30,6 +44,7 @@ struct NumericTraits<paddle::platform::float16>
     : BaseTraits<FLOATING_POINT, true, false, uint16_t,
                  paddle::platform::float16> {};
 }  // namespace cub
+#endif
 
 namespace paddle {
 namespace operators {
@@ -131,7 +146,29 @@ void ArgFullSort(const platform::CUDADeviceContext& ctx, const Tensor* input,
 
   sorted_out_ptr = out;
   sorted_indices_ptr = ind;
+#ifdef __HIPCC__
+  // create iter for counting input
+  hipcub::CountingInputIterator<IndType> counting_iter(0);
+  // segment_offset is used for move to next row
+  hipcub::TransformInputIterator<IndType, SegmentOffsetIter,
+                                 hipcub::CountingInputIterator<IndType>>
+      segment_offsets_t(counting_iter, SegmentOffsetIter(num_cols));
 
+  hipError_t err;
+  if (descending) {
+    err = hipcub::DeviceSegmentedRadixSort::SortPairsDescending(
+        nullptr, temp_storage_bytes, inp, sorted_out_ptr,
+        input_indices.data<IndType>(), sorted_indices_ptr, num_cols * num_rows,
+        num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
+        cu_stream);
+  } else {
+    err = hipcub::DeviceSegmentedRadixSort::SortPairs(
+        nullptr, temp_storage_bytes, inp, sorted_out_ptr,
+        input_indices.data<IndType>(), sorted_indices_ptr, num_cols * num_rows,
+        num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
+        cu_stream);
+  }
+#else
   // create iter for counting input
   cub::CountingInputIterator<IndType> counting_iter(0);
   // segment_offset is used for move to next row
@@ -153,11 +190,27 @@ void ArgFullSort(const platform::CUDADeviceContext& ctx, const Tensor* input,
         num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
         cu_stream);
   }
+#endif
   PADDLE_ENFORCE_CUDA_SUCCESS(err);
 
   Tensor temp_storage;
   temp_storage.mutable_data<uint8_t>(ctx.GetPlace(), temp_storage_bytes);
 
+#ifdef __HIPCC__
+  if (descending) {
+    err = hipcub::DeviceSegmentedRadixSort::SortPairsDescending(
+        temp_storage.data<uint8_t>(), temp_storage_bytes, inp, sorted_out_ptr,
+        input_indices.data<IndType>(), sorted_indices_ptr, num_cols * num_rows,
+        num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
+        cu_stream);
+  } else {
+    err = hipcub::DeviceSegmentedRadixSort::SortPairs(
+        temp_storage.data<uint8_t>(), temp_storage_bytes, inp, sorted_out_ptr,
+        input_indices.data<IndType>(), sorted_indices_ptr, num_cols * num_rows,
+        num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
+        cu_stream);
+  }
+#else
   if (descending) {
     err = cub::DeviceSegmentedRadixSort::SortPairsDescending(
         temp_storage.data<uint8_t>(), temp_storage_bytes, inp, sorted_out_ptr,
@@ -171,6 +224,7 @@ void ArgFullSort(const platform::CUDADeviceContext& ctx, const Tensor* input,
         num_rows, segment_offsets_t, segment_offsets_t + 1, 0, sizeof(T) * 8,
         cu_stream);
   }
+#endif
 
   PADDLE_ENFORCE_CUDA_SUCCESS(err);
 }
