@@ -48,14 +48,15 @@ using platform::CUDADeviceContext;
 template <typename T>
 struct CudnnActivationFunctor {
   using ELEMENT_TYPE = T;
-  CudnnActivationFunctor(const CUDADeviceContext& ctx, const T& c,
 #ifdef PADDLE_WITH_HIP
+  CudnnActivationFunctor(const CUDADeviceContext& ctx, const T& c,
                          const miopenActivationMode_t& m)
+      : ctx_(ctx), coef_(c), mode_(m) {}
 #else
+  CudnnActivationFunctor(const CUDADeviceContext& ctx, const T& c,
                          const cudnnActivationMode_t& m)
+      : ctx_(ctx), coef_(c), mode_(m) {}
 #endif
-      : ctx_(ctx), coef_(c), mode_(m) {
-  }
   void operator()(const Tensor& x, Tensor* out) {
     ActivationDescriptor act_desc;
     act_desc.set(mode_, coef_);
@@ -88,14 +89,15 @@ struct CudnnActivationFunctor {
 template <typename T>
 struct CudnnActivationGradFunctor {
   using ELEMENT_TYPE = T;
-  CudnnActivationGradFunctor(const CUDADeviceContext& ctx, const T& c,
 #ifdef PADDLE_WITH_HIP
+  CudnnActivationGradFunctor(const CUDADeviceContext& ctx, const T& c,
                              const miopenActivationMode_t& m)
+      : ctx_(ctx), coef_(c), mode_(m) {}
 #else
+  CudnnActivationGradFunctor(const CUDADeviceContext& ctx, const T& c,
                              const cudnnActivationMode_t& m)
+      : ctx_(ctx), coef_(c), mode_(m) {}
 #endif
-      : ctx_(ctx), coef_(c), mode_(m) {
-  }
   void operator()(const Tensor& x, const Tensor& out, const Tensor dout,
                   Tensor* dx) {
     ActivationDescriptor act_desc;
