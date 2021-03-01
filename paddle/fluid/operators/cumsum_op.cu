@@ -16,7 +16,12 @@ limitations under the License. */
 #include <thrust/device_vector.h>
 #include <thrust/reverse.h>
 #include <thrust/scan.h>
-#include "cub/cub.cuh"
+#ifdef __NVCC__
+#include <cub/cub.cuh>
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
 #include "paddle/fluid/operators/cum_op.h"
 #include "paddle/fluid/platform/gpu_launch_config.h"
 
@@ -124,7 +129,16 @@ __global__ void MatrixTranspose(T* odata, const T* idata, size_t height,
 template <typename T, int BLOCK_THREADS, int ITEMS_PER_THREAD>
 __global__ void BlockScanKernel(T* d_out, const T* d_in, int inner_size,
                                 int outer_size, int scan_size, bool exclusive) {
-  // Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
+// Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
+#ifdef __HIPCC__
+  typedef hipcub::BlockLoad<T, BLOCK_THREADS, ITEMS_PER_THREAD,
+                            hipcub::BLOCK_LOAD_TRANSPOSE>
+      BlockLoadT;
+  typedef hipcub::BlockStore<T, BLOCK_THREADS, ITEMS_PER_THREAD,
+                             hipcub::BLOCK_STORE_TRANSPOSE>
+      BlockStoreT;
+  typedef hipcub::BlockScan<T, BLOCK_THREADS> BlockScanT;
+#else
   typedef cub::BlockLoad<T, BLOCK_THREADS, ITEMS_PER_THREAD,
                          cub::BLOCK_LOAD_TRANSPOSE>
       BlockLoadT;
@@ -132,6 +146,7 @@ __global__ void BlockScanKernel(T* d_out, const T* d_in, int inner_size,
                           cub::BLOCK_STORE_TRANSPOSE>
       BlockStoreT;
   typedef cub::BlockScan<T, BLOCK_THREADS> BlockScanT;
+#endif
   // Allocate type-safe, repurposable shared memory for collectives
   __shared__ union {
     typename BlockLoadT::TempStorage load;
@@ -163,6 +178,16 @@ __global__ void BlockScanKernel(T* d_out, const T* d_in, int inner_size,
         .Load(d_in + offset, thread_keys, valid_item, 0);
 
     __syncthreads();
+#ifdef __HIPCC__
+    if (exclusive) {
+      T init_value = static_cast<T>(0);
+      BlockScanT(temp_storage.scan)
+          .ExclusiveScan(thread_keys, thread_keys, hipcub::Sum(), prefix_op);
+    } else {
+      BlockScanT(temp_storage.scan)
+          .InclusiveScan(thread_keys, thread_keys, hipcub::Sum(), prefix_op);
+    }
+#else
     if (exclusive) {
       T init_value = static_cast<T>(0);
       BlockScanT(temp_storage.scan)
@@ -171,6 +196,7 @@ __global__ void BlockScanKernel(T* d_out, const T* d_in, int inner_size,
       BlockScanT(temp_storage.scan)
           .InclusiveScan(thread_keys, thread_keys, cub::Sum(), prefix_op);
     }
+#endif
     __syncthreads();
 
     BlockStoreT(temp_storage.store)
