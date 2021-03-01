@@ -20,16 +20,34 @@ limitations under the License. */
 #include "paddle/fluid/operators/elementwise/elementwise_op_function.h"
 #include "paddle/fluid/operators/math/blas.h"
 #include "paddle/fluid/operators/math/math_function.h"
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 #ifdef __NVCC__
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include "cub/cub.cuh"
 #endif
+#ifdef __HIPCC__
+#include <hip/hip_fp16.h>
+#include <hip/hip_runtime.h>
+#include <hipcub/hipcub.hpp>
+namespace cub = hipcub;
+#endif
 #endif
 
 namespace paddle {
 namespace operators {
+
+// constexpr int PADDLE_CUDA_NUM_THREADS = 512;
+
+#ifdef __HIPCC__
+#define KERNEL_PRINT(__FORMAT, ...)              \
+        printf("%03d: [tid.x=<%lu> tid.y=<%lu> bid.x=<%lu> bid.y=<%lu>]: " __FORMAT "\n", \
+        __LINE__, hipThreadIdx_x, hipThreadIdx_y, hipBlockIdx_x, hipBlockIdx_y, ##__VA_ARGS__);
+#else
+#define KERNEL_PRINT(__FORMAT, ...)              \
+        printf("%03d: [tid.x=<%lu> tid.y=<%lu> bid.x=<%lu> bid.y=<%lu>]: " __FORMAT "\n", \
+        __LINE__, threadIdx.x, threadIdx.y, blockIdx.x, blockIdx.y, ##__VA_ARGS__);
+#endif
 
 template <typename DeviceContext, typename T>
 void default_elementwise_add(const framework::ExecutionContext &ctx,
@@ -126,9 +144,8 @@ elementwise_add_grad(const framework::ExecutionContext &ctx,
   default_elementwise_add_grad<DeviceContext, T>(ctx, x, y, out, dout, dx, dy);
 }
 
-#ifdef PADDLE_WITH_CUDA
-#ifdef __NVCC__
-
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
+#if defined(__NVCC__) || defined(__HIPCC__)
 template <typename T, int Size>
 struct alignas(sizeof(T) * Size) AlignedVector {
   T val[Size];
@@ -153,6 +170,8 @@ __global__ void MatrixColReduce(const T *__restrict__ in, T *__restrict__ out,
                       ((width & (BLOCK_W - 1)) ? BLOCK_W : 0);
   size_t full_height = (height & (~((uint64_t)(BLOCK_H - 1)))) +
                        ((height & (BLOCK_H - 1)) ? BLOCK_H : 0);
+
+  // KERNEL_PRINT("idx=%ld width_stride=%ld full_width=%ld full_height=%ld", idx, width_stride, full_width, full_height);
 
 #pragma unroll
   for (size_t w = idx; w < full_width; w += width_stride) {
@@ -179,7 +198,33 @@ __global__ void MatrixColReduce(const T *__restrict__ in, T *__restrict__ out,
   }
 }
 
-#if CUDA_VERSION >= 10000
+// template<typename T>
+// __global__ void MatrixColReduceHIP(const T* __restrict__ input, T* __restrict__ output, size_t width, size_t height) {
+//     __shared__ T sdata[PADDLE_CUDA_NUM_THREADS];
+
+//     T x = static_cast<T>(0);
+//     // Accumulate per thread partial sum
+//     for(int i=threadIdx.x; i < height; i += blockDim.x) {
+//       x += input[blockIdx.x + i * width];
+//     }
+
+//     // load thread partial sum into shared memory
+//     sdata[threadIdx.x] = x;
+//     __syncthreads();
+
+//     for(int offset = blockDim.x >> 1; offset > 0; offset >>= 1) {
+//         if(threadIdx.x < offset) {
+//             sdata[threadIdx.x] += sdata[threadIdx.x + offset];
+//         }
+//         __syncthreads();
+//     }
+//     // thread 0 writes the final result
+//     if(threadIdx.x == 0) {
+//         output[blockIdx.x] = sdata[0];
+//     }
+// }
+
+#if defined(PADDLE_WITH_CUDA) && CUDA_VERSION >= 10000
 template <int SIZE>
 __global__ void VecFP16MatrixColReduce(const __half2 *__restrict__ in,
                                        __half2 *__restrict__ out, size_t width,
@@ -287,7 +332,7 @@ bool static RunSpecialDims(const framework::DDim &dx_dims,
   return true;
 }
 
-#ifdef PADDLE_WITH_CUDA
+#if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 // cuda definition
 template <typename DeviceContext, typename T>
 typename std::enable_if<
@@ -315,11 +360,14 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
     // skip out
     auto *out = dout;
 
+    LOG(INFO) << "x_dims is : " << x->dims().to_str();
+    LOG(INFO) << "y_dims is : " << y->dims().to_str();
+    LOG(INFO) << "dout_dims is : " << dout->dims().to_str();
+
 // TODO(@wangchaochaohu, zhouwei35): Fix conv_transpose2d API(dataformat NHWC)
 // error in Windows
-#if defined(PADDLE_WITH_CUDA) && !defined(_WIN32)
-#ifdef __NVCC__
-
+#if (defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)) && !defined(_WIN32)
+#if defined(__NVCC__) || defined(__HIPCC__)
     int axis = ctx.Attr<int>("axis");
     if (ctx.GetPlace() == platform::CUDAPlace() && dx != nullptr &&
         dy != nullptr && dout != nullptr && dx->numel() != dy->numel() &&
@@ -360,8 +408,8 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
         return;
       }
 
-      constexpr int block_x = 32;
-      constexpr int block_y = 32;
+      constexpr int block_x = 4;
+      constexpr int block_y = 4;
       dim3 blocks(block_x, block_y);
 
       int max_physical_threads =
@@ -369,7 +417,12 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
       int max_blocks = std::max(max_physical_threads / (block_x * block_y), 1);
       int theory_block = (width + blocks.x - 1) / blocks.x;
       dim3 grids(std::min(theory_block, max_blocks));
-#if CUDA_VERSION >= 10000
+      LOG(INFO) << "max_physical_threads is : " << max_physical_threads;
+      LOG(INFO) << "max_blocks is : " << max_blocks;
+      LOG(INFO) << "theory_block is : " << theory_block;
+      LOG(INFO) << "width is : " << width;
+      LOG(INFO) << "height is : " << height;
+#if defined(PADDLE_WITH_CUDA) && CUDA_VERSION >= 10000
       if (std::is_same<T, paddle::platform::float16>::value && width < 2048 &&
           width % 2 == 0 && height % 64 == 0) {
         auto &dev_ctx =
@@ -390,8 +443,13 @@ class ElementwiseAddGradKernel : public ElemwiseGradKernel<T> {
 #endif
 
       if (width / height < 32) {
+// #ifdef __HIPCC__
+//         MatrixColReduceHIP<T><<<dim3(width), dim3(PADDLE_CUDA_NUM_THREADS), 0, stream>>>(
+//             dout_data, out_data, width, height);
+// #else
         MatrixColReduce<T, block_x, block_y><<<grids, blocks, 0, stream>>>(
             dout_data, out_data, width, height);
+// #endif
       } else {
         size_t thread_nums = 1024;
         size_t block_nums = (width + thread_nums - 1) / thread_nums;
