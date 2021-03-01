@@ -12,7 +12,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
+#ifdef __NVCC__
 #include "cub/cub.cuh"
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
+
 #include "paddle/fluid/framework/data_layout.h"
 #include "paddle/fluid/framework/op_registry.h"
 #include "paddle/fluid/platform/cuda_primitives.h"
@@ -86,7 +92,11 @@ __global__ void AffineChannelScaleBiasGradientCUDAKernel(
     T* dbias) {
   const int outer_size = C;
   const int inner_size = N * HxW;
+#ifdef __HIPCC__
+  typedef hipcub::BlockReduce<double, BlockDim> BlockReduce;
+#else
   typedef cub::BlockReduce<double, BlockDim> BlockReduce;
+#endif
   __shared__ typename BlockReduce::TempStorage ds_storage;
   __shared__ typename BlockReduce::TempStorage db_storage;
 
@@ -101,10 +111,17 @@ __global__ void AffineChannelScaleBiasGradientCUDAKernel(
       db_sum += dy[index];
     }
     __syncthreads();
+#ifdef __HIPCC__
+    auto ds_out = BlockReduce(ds_storage)
+                      .Reduce(static_cast<double>(ds_sum), hipcub::Sum());
+    auto db_out = BlockReduce(db_storage)
+                      .Reduce(static_cast<double>(db_sum), hipcub::Sum());
+#else
     auto ds_out =
         BlockReduce(ds_storage).Reduce(static_cast<double>(ds_sum), cub::Sum());
     auto db_out =
         BlockReduce(db_storage).Reduce(static_cast<double>(db_sum), cub::Sum());
+#endif
     __syncthreads();
     if (threadIdx.x == 0) {
       dscale[i] = ds_out;

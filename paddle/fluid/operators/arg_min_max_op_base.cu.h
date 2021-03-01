@@ -14,9 +14,14 @@ limitations under the License. */
 
 #pragma once
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
-#include <cub/cub.cuh>
+#ifdef __NVCC__
+#include "cub/cub.cuh"
+#endif
+#ifdef __HIPCC__
+#include <hipcub/hipcub.hpp>
+#endif
 #include <limits>
 #include <string>
 #include <typeinfo>
@@ -31,7 +36,11 @@ namespace operators {
 
 namespace {  // NOLINT
 template <typename K, typename V>
+#ifdef __HIPCC__
+using KeyValuePair = hipcub::KeyValuePair<K, V>;
+#else
 using KeyValuePair = cub::KeyValuePair<K, V>;
+#endif
 using Tensor = framework::Tensor;
 
 }  // end namespace
@@ -58,7 +67,11 @@ __global__ void ArgCUDAKernel(const int64_t height,     // n * h
                               const int64_t post_size,  // h
                               const Reducer reducer, const T init, const T* in,
                               IndType* out) {
+#ifdef __HIPCC__
+  typedef hipcub::BlockReduce<KeyValuePair<int, T>, BlockDim> BlockReduce;
+#else
   typedef cub::BlockReduce<KeyValuePair<int, T>, BlockDim> BlockReduce;
+#endif
   __shared__ typename BlockReduce::TempStorage temp_storage;
 
   for (int idx = blockIdx.x; idx < height; idx += gridDim.x) {
@@ -109,7 +122,11 @@ void ComputeFullArg(const platform::CUDADeviceContext& ctx, const Tensor& input,
   const T* in_data = input.data<T>();
   IndType* out_data = indices->mutable_data<IndType>(ctx.GetPlace());
 
+#ifdef __HIPCC__
+  if (typeid(Reducer) == typeid(hipcub::ArgMax)) {
+#else
   if (typeid(Reducer) == typeid(cub::ArgMax)) {
+#endif
     switch (ComputeBlockSize(width)) {
       FIXED_BLOCK_DIM_CASE(
           ArgCUDAKernel<T, IndType, Reducer,
