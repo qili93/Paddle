@@ -220,13 +220,12 @@ static __global__ void RowReductionForDiffMaxSum(const T* logits_data,
   if (threadIdx.x == 0) max_data[blockIdx.x] = 0;
 }
 
-#ifdef __HIPCC__
-// Note(qili93): HIP do not support return in kernel, need to seperate 
+#ifdef __HIPCC__  // @{ HIP Seperate Kernel for RowReductionForDiffMaxSum
+// Note(qili93): HIP do not support return in kernel, need to seperate
 // RowReductionForDiffMaxSum into two kernels below
 template <typename T, int BlockDim>
-static __global__ void RowReductionForSum(const T* logits_data,
-                                                 T* max_data, T* softmax, int64_t d,
-                                                 int axis_dim) {
+static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
+                                          T* softmax, int64_t d, int axis_dim) {
   __shared__ BlockReduceTempStorage<T, BlockDim> temp_storage;
 
   int64_t remain = d / axis_dim;
@@ -253,16 +252,14 @@ static __global__ void RowReductionForSum(const T* logits_data,
 }
 
 template <typename T, int BlockDim, bool CalculateLogSoftmax = false>
-static __global__ void RowReductionForDiff(const T* logits_data,
-                                                 T* max_data, T* softmax, int d,
-                                                 int axis_dim) {
+static __global__ void RowReductionForDiff(const T* logits_data, T* max_data,
+                                           T* softmax, int d, int axis_dim) {
   int remain = d / axis_dim;
   int idx_n = blockIdx.x / remain;
   int idx_remain = blockIdx.x % remain;
   int beg_idx = idx_n * d + threadIdx.x * remain + idx_remain;
   int end_idx = (idx_n + 1) * d;
   int step = BlockDim * remain;
-   
   T diff_max_sum = max_data[blockIdx.x];
   softmax[beg_idx] -= diff_max_sum;
   beg_idx += step;
@@ -272,9 +269,9 @@ static __global__ void RowReductionForDiff(const T* logits_data,
   }
 
   __syncthreads();
-  if (threadIdx.x == 0) max_data[blockIdx.x] = 0; 
+  if (threadIdx.x == 0) max_data[blockIdx.x] = 0;
 }
-#endif
+#endif  // @} End HIP Seperate Kernel for RowReductionForDiffMaxSum
 
 // Make sure that BlockDim <= axis_dim
 template <typename T, int BlockDim>
@@ -408,25 +405,25 @@ static void HardLabelSoftmaxWithCrossEntropy(
   auto stream = ctx.stream();
 
 #ifdef __HIPCC__
-#define CALL_HARD_LABEL_SOFTMAX_WITH_CROSS_ENTROPY_FUSED_KERNEL(BlockDim)  \
-  case BlockDim: {                                                         \
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForMax<T, BlockDim>),   \
-        dim3(grid_dim), dim3(BlockDim), 0, stream,                         \
-        logits_data, loss_data, d, axis_dim);                              \
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForSum<T,  BlockDim>), \
-        dim3(grid_dim), dim3(BlockDim), 0, stream,                         \
-        logits_data, loss_data, softmax_data, d, axis_dim);                \
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForDiff<T,  BlockDim>), \
-        dim3(grid_dim), dim3(BlockDim), 0, stream,                         \
-        logits_data, loss_data, softmax_data, d, axis_dim);                \
-    platform::ForRange<platform::CUDADeviceContext> for_range(ctx, n* d);  \
-    if (ignore_idx >= 0 && ignore_idx < axis_dim) {                        \
-      for_range(HardLabelSoftmaxWithCrossEntropyFunctorWithIgnoreIdx<T>(   \
-          labels_data, loss_data, softmax_data, d, axis_dim, ignore_idx)); \
-    } else {                                                               \
-      for_range(HardLabelSoftmaxWithCrossEntropyFunctor<T>(                \
-          labels_data, loss_data, softmax_data, d, axis_dim, ignore_idx)); \
-    }                                                                      \
+#define CALL_HARD_LABEL_SOFTMAX_WITH_CROSS_ENTROPY_FUSED_KERNEL(BlockDim)      \
+  case BlockDim: {                                                             \
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForMax<T, BlockDim>),       \
+                       dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, \
+                       loss_data, d, axis_dim);                                \
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForSum<T, BlockDim>),       \
+                       dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, \
+                       loss_data, softmax_data, d, axis_dim);                  \
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForDiff<T, BlockDim>),      \
+                       dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, \
+                       loss_data, softmax_data, d, axis_dim);                  \
+    platform::ForRange<platform::CUDADeviceContext> for_range(ctx, n* d);      \
+    if (ignore_idx >= 0 && ignore_idx < axis_dim) {                            \
+      for_range(HardLabelSoftmaxWithCrossEntropyFunctorWithIgnoreIdx<T>(       \
+          labels_data, loss_data, softmax_data, d, axis_dim, ignore_idx));     \
+    } else {                                                                   \
+      for_range(HardLabelSoftmaxWithCrossEntropyFunctor<T>(                    \
+          labels_data, loss_data, softmax_data, d, axis_dim, ignore_idx));     \
+    }                                                                          \
   } break
 #else
 #define CALL_HARD_LABEL_SOFTMAX_WITH_CROSS_ENTROPY_FUSED_KERNEL(BlockDim)  \
@@ -478,14 +475,15 @@ static void SoftmaxWithCrossEntropyFusedKernel(
 #define CALL_SOFTMAX_WITH_CROSS_ENTROPY_FUSED_KERNEL(BlockDim)                 \
   case BlockDim:                                                               \
     hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForMax<T, BlockDim>),       \
-        dim3(grid_dim), dim3(BlockDim), 0, stream,                             \
-        logits_data, loss_data, d, axis_dim);                                  \
+                       dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, \
+                       loss_data, d, axis_dim);                                \
     hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForSum<T, BlockDim>),       \
-        dim3(grid_dim), dim3(BlockDim), 0, stream,                             \
-        logits_data, loss_data, softmax_data, d, axis_dim);                    \
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(RowReductionForSoftmaxAndCrossEntropy<  \
-        T, BlockDim>), dim3(grid_dim), dim3(BlockDim), 0, stream,              \
-        logits_data, labels_data, loss_data, softmax_data, d, axis_dim);       \
+                       dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, \
+                       loss_data, softmax_data, d, axis_dim);                  \
+    hipLaunchKernelGGL(                                                        \
+        HIP_KERNEL_NAME(RowReductionForSoftmaxAndCrossEntropy<T, BlockDim>),   \
+        dim3(grid_dim), dim3(BlockDim), 0, stream, logits_data, labels_data,   \
+        loss_data, softmax_data, d, axis_dim);                                 \
     break
 #else
 #define CALL_SOFTMAX_WITH_CROSS_ENTROPY_FUSED_KERNEL(BlockDim)                 \

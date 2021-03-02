@@ -63,7 +63,7 @@ struct ForRange<CUDADeviceContext> {
   template <typename Function>
   inline void operator()(Function func) const {
 #ifdef __HIPCC__
-// HIP will throw core dump when threads > 256
+    // HIP will throw core dump when threads > 256
     constexpr int num_threads = 256;
 #else
     constexpr int num_threads = 1024;

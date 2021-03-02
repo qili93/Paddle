@@ -230,7 +230,10 @@ class TestBatchNormChannelLast(unittest.TestCase):
                 y2 = net2(channel_first_x)
                 y2 = paddle.transpose(y2, [0, 2, 3, 4, 1])
                 if core.is_compiled_with_rocm():
-                    self.assertEqual(np.allclose(y1.numpy(), y2.numpy(), atol=1e-07), True)
+                    # HIP will fail if no atol
+                    self.assertEqual(
+                        np.allclose(
+                            y1.numpy(), y2.numpy(), atol=1e-07), True)
                 else:
                     self.assertEqual(np.allclose(y1.numpy(), y2.numpy()), True)
 
