@@ -590,6 +590,7 @@ STATIC_MODE_TESTING_LIST = [
     'test_conv2d_int8_mkldnn_op',
     'test_conv2d_mkldnn_op',
     'test_conv2d_transpose_mkldnn_op',
+    'test_conv2d_transpose_bf16_mkldnn_op',
     'test_conv3d_mkldnn_op',
     'test_dequantize_mkldnn_op',
     'test_elementwise_add_mkldnn_op',
@@ -694,4 +695,5 @@ STATIC_MODE_TESTING_LIST = [
     'test_shape_op_xpu',
     'test_slice_op_xpu',
     'test_generate_proposals_v2_op',
+    'test_lamb_op_xpu',
 ]

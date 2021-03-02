@@ -278,26 +278,14 @@ class EigenCudaStreamDevice : public Eigen::StreamInterface {
 
   void* scratchpad() const override {
     if (scratch_ == NULL) {
-// windows use an old version of eigen that uses kCudaScratchSize,
-// once windows updates eigen to a recent version, the following code
-// can use kGpuScratchSize uniformly
-#ifdef _WIN32
-      scratch_ = allocate(Eigen::kCudaScratchSize + sizeof(unsigned int));
-#else
       scratch_ = allocate(Eigen::kGpuScratchSize + sizeof(unsigned int));
-#endif
     }
     return scratch_;
   }
 
   unsigned int* semaphore() const override {
     if (semaphore_ == NULL) {
-#ifdef _WIN32
-      char* scratch =
-          static_cast<char*>(scratchpad()) + Eigen::kCudaScratchSize;
-#else
       char* scratch = static_cast<char*>(scratchpad()) + Eigen::kGpuScratchSize;
-#endif
       semaphore_ = reinterpret_cast<unsigned int*>(scratch);
 #ifdef PADDLE_WITH_HIP
       PADDLE_ENFORCE_CUDA_SUCCESS(
@@ -469,6 +457,10 @@ miopenHandle_t CUDADeviceContext::cudnn_handle() const {
 cudnnHandle_t CUDADeviceContext::cudnn_handle() const {
 #endif
   return context()->CudnnHandle();
+}
+
+cublasHandle_t CUDADeviceContext::cublas_handle() const {
+  return context()->CublasHandle()->GetCublasHandle();
 }
 
 CudnnWorkspaceHandle CUDADeviceContext::cudnn_workspace_handle() const {
