@@ -160,6 +160,7 @@ set(GLOB_OP_LIB ${OP_LIBRARY} CACHE INTERNAL "Global OP library")
 add_subdirectory(benchmark)
 
 cc_test(op_debug_string_test SRCS op_debug_string_test.cc DEPS elementwise_add_op)
+cc_test(test_softmax_with_cross_entropy_op SRCS softmax_with_cross_entropy_op_test.cc DEPS op_registry softmax_with_cross_entropy_op scope device_context enforce executor softmax cross_entropy)
 
 if(WITH_MKLDNN)
 include(mkldnn/inplace_op_tests.cmake)

@@ -23,6 +23,20 @@ namespace cub = hipcub;
 namespace paddle {
 namespace operators {
 
+#ifdef __HIPCC__
+#define KERNEL_PRINT(__FORMAT, ...)                                           \
+  printf("%03d: [tid.x=<%lu> tid.y=<%lu> bid.x=<%lu> bid.y=<%lu>]: " __FORMAT \
+         "\n",                                                                \
+         __LINE__, hipThreadIdx_x, hipThreadIdx_y, hipBlockIdx_x,             \
+         hipBlockIdx_y, ##__VA_ARGS__);
+#else
+#define KERNEL_PRINT(__FORMAT, ...)                                       \
+  printf("%03d: [tid.x=<%d> tid.y=<%d> bid.x=<%d> bid.y=<%d>]: " __FORMAT \
+         "\n",                                                            \
+         __LINE__, threadIdx.x, threadIdx.y, blockIdx.x, blockIdx.y,      \
+         ##__VA_ARGS__);
+#endif
+
 using Tensor = framework::Tensor;
 
 namespace {
@@ -249,6 +263,9 @@ static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
   diff_max_sum =
       BlockReduce<T, BlockDim>(temp_storage).Reduce(diff_max_sum, cub::Sum());
   if (threadIdx.x == 0) max_data[blockIdx.x] = log_on_device(diff_max_sum);
+
+  // KERNEL_PRINT("max_data[%d]=%f", static_cast<int>(blockIdx.x),
+  // static_cast<float>(max_data[blockIdx.x]));
 }
 
 template <typename T, int BlockDim, bool CalculateLogSoftmax = false>
@@ -398,7 +415,11 @@ static void HardLabelSoftmaxWithCrossEntropy(
     const platform::CUDADeviceContext& ctx, const T* logits_data,
     const int64_t* labels_data, T* loss_data, T* softmax_data, int64_t n,
     int64_t d, int axis_dim, int ignore_idx) {
+#ifdef __HIPCC__
+  constexpr int kMaxBlockDim = 256;
+#else
   constexpr int kMaxBlockDim = 512;
+#endif
   int64_t block_dim = axis_dim >= kMaxBlockDim
                           ? kMaxBlockDim
                           : (1 << static_cast<int>(std::log2(axis_dim)));
