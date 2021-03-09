@@ -152,8 +152,9 @@ using BlockReduceTempStorage = typename BlockReduce<T, BlockDim>::TempStorage;
 // Make sure that BlockDim <= axis_dim
 // This kernel is used to calculate the max element of each row
 template <typename T, int BlockDim>
-static __global__ void RowReductionForMax(const T* logits_data, T* max_data,
-                                          int64_t d, int axis_dim) //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+static __global__ void RowReductionForMax(
+    const T* logits_data, T* max_data, int64_t d,
+    int axis_dim)  //__attribute__((amdgpu_flat_work_group_size(1,512)))
 {
   __shared__ BlockReduceTempStorage<T, BlockDim> temp_storage;
 
@@ -239,8 +240,9 @@ static __global__ void RowReductionForDiffMaxSum(const T* logits_data,
 // Note(qili93): HIP do not support return in kernel, need to seperate
 // RowReductionForDiffMaxSum into two kernels below
 template <typename T, int BlockDim>
-static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
-                                          T* softmax, int64_t d, int axis_dim) //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+static __global__ void RowReductionForSum(
+    const T* logits_data, T* max_data, T* softmax, int64_t d,
+    int axis_dim)  //__attribute__((amdgpu_flat_work_group_size(1,512)))
 {
   __shared__ BlockReduceTempStorage<T, BlockDim> temp_storage;
 
@@ -271,8 +273,9 @@ static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
 }
 
 template <typename T, int BlockDim, bool CalculateLogSoftmax = false>
-static __global__ void RowReductionForDiff(const T* logits_data, T* max_data,
-                                           T* softmax, int d, int axis_dim)  //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+static __global__ void RowReductionForDiff(
+    const T* logits_data, T* max_data, T* softmax, int d,
+    int axis_dim)  //__attribute__((amdgpu_flat_work_group_size(1,512)))
 {
   int remain = d / axis_dim;
   int idx_n = blockIdx.x / remain;

@@ -132,8 +132,10 @@ void TestCrossEntropy(const platform::DeviceContext& ctx,
   // feed input data
   // feed_tensor_data<T>(ctx, input_dims, logits_tensor, 1000, "logit");
   // feed_tensor_data<int64_t>(ctx, label_dims, label_tensor, 10, "label");
-  read_tensor_data<T>(ctx, input_dims, logits_tensor, "logit", "input_data.txt");
-  read_tensor_data<int64_t>(ctx, label_dims, label_tensor, "label", "label_data.txt");
+  read_tensor_data<T>(ctx, input_dims, logits_tensor, "logit",
+                      "input_data.txt");
+  read_tensor_data<int64_t>(ctx, label_dims, label_tensor, "label",
+                            "label_data.txt");
 
   auto op_fwd = framework::OpRegistry::CreateOp(desc_fwd);
 
