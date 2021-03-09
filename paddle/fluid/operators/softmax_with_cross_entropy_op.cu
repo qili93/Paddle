@@ -153,7 +153,8 @@ using BlockReduceTempStorage = typename BlockReduce<T, BlockDim>::TempStorage;
 // This kernel is used to calculate the max element of each row
 template <typename T, int BlockDim>
 static __global__ void RowReductionForMax(const T* logits_data, T* max_data,
-                                          int64_t d, int axis_dim) {
+                                          int64_t d, int axis_dim) //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+{
   __shared__ BlockReduceTempStorage<T, BlockDim> temp_storage;
 
   // logits_data view as [n, axis_dim, remain]
@@ -239,7 +240,8 @@ static __global__ void RowReductionForDiffMaxSum(const T* logits_data,
 // RowReductionForDiffMaxSum into two kernels below
 template <typename T, int BlockDim>
 static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
-                                          T* softmax, int64_t d, int axis_dim) {
+                                          T* softmax, int64_t d, int axis_dim) //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+{
   __shared__ BlockReduceTempStorage<T, BlockDim> temp_storage;
 
   int64_t remain = d / axis_dim;
@@ -270,7 +272,8 @@ static __global__ void RowReductionForSum(const T* logits_data, T* max_data,
 
 template <typename T, int BlockDim, bool CalculateLogSoftmax = false>
 static __global__ void RowReductionForDiff(const T* logits_data, T* max_data,
-                                           T* softmax, int d, int axis_dim) {
+                                           T* softmax, int d, int axis_dim)  //__attribute__((amdgpu_flat_work_group_size(1,512))) 
+{
   int remain = d / axis_dim;
   int idx_n = blockIdx.x / remain;
   int idx_remain = blockIdx.x % remain;
