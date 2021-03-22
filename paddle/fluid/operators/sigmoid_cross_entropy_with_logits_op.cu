@@ -31,10 +31,11 @@ using Tensor = framework::Tensor;
 
 #ifdef __HIPCC__
 static constexpr int kNumCUDAThreads = 256;
+static constexpr int kNumMaxinumNumBlocks = 256;
 #else
 static constexpr int kNumCUDAThreads = 512;
-#endif
 static constexpr int kNumMaxinumNumBlocks = 4096;
+#endif
 
 static inline int NumBlocks(const int N) {
   return std::min((N + kNumCUDAThreads - 1) / kNumCUDAThreads,
@@ -129,6 +130,7 @@ class GPUSigmoidCrossEntropyWithLogitsKernel : public framework::OpKernel<T> {
     int limit = Out->numel();
     int blocks = NumBlocks(limit);
     int threads = kNumCUDAThreads;
+    LOG(INFO) << "blocks=" <<  blocks << ", threads=" << threads;
     GPUSigmoidForward<T><<<blocks, threads, 0, dev_ctx.stream()>>>(
         X->data<T>(), Labels->data<T>(), ignore_index, limit, out_data, counts);
     if (normalize) {
@@ -163,6 +165,7 @@ class GPUSigmoidCrossEntropyWithLogitsGradKernel
     int limit = dX->numel();
     int blocks = NumBlocks(limit);
     int threads = kNumCUDAThreads;
+    LOG(INFO) << "blocks=" <<  blocks << ", threads=" << threads;
     GPUSigmoidBackward<T><<<blocks, threads, 0, dev_ctx.stream()>>>(
         X->data<T>(), Labels->data<T>(), ignore_index, dOut->data<T>(), limit,
         dx_data, counts);

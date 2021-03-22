@@ -26,6 +26,8 @@
 #ifdef PADDLE_WITH_MKLDNN
 #include "paddle/fluid/platform/mkldnn_helper.h"
 #endif
+#include <mutex>  // NOLINT
+#include "paddle/fluid/operators/tensor_formatter.h"
 
 DECLARE_bool(use_mkldnn);
 
@@ -323,6 +325,128 @@ void OpBase::ClearBackwardTrace() {
   outs_.clear();
 }
 
+static void SaveTensorToFile(const framework::LoDTensor& tensor,
+                            const std::string folder_path,
+                            const std::string filename) {
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> lock(mutex);
+
+  std::string mkdir_cmd = "mkdir -p " + folder_path;
+  PADDLE_ENFORCE_EQ(
+      system(mkdir_cmd.c_str()), 0,
+      platform::errors::NotFound("Cannot create folder %s", folder_path));
+
+  std::string file_path = folder_path + filename + ".txt";
+  std::ofstream fout(file_path);
+  PADDLE_ENFORCE_EQ(
+      static_cast<bool>(fout), true,
+      platform::errors::NotFound("Cannot open %s to write", filename));
+
+  operators::TensorFormatter formatter;
+  fout << formatter.Format(tensor, filename, "");
+
+  fout.close();
+  VLOG(4) << "Save tensor to text file " << file_path;
+}
+
+template <typename VarType>
+static void SaveVarsToFile(const std::string& op_type,
+                           const NameVarMap<VarType>& ins,
+                           const NameVarMap<VarType>& outs) {
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> lock(mutex);
+
+  for (auto& pair : ins) {
+    auto var_name = pair.first;
+    auto var_list = pair.second;
+    for (size_t i = 0; i < var_list.size(); ++i) {
+      if(var_list[i] == nullptr) continue;
+      const framework::Variable& var = var_list[i]->Var();
+      if(!var.IsInitialized()) continue;
+      auto& tensor = var.Get<framework::LoDTensor>();
+      if (tensor.IsInitialized()) {
+        std::string folder_path = "tensor_data/" + op_type + "/Inputs/" + var_name + "/";
+        SaveTensorToFile(tensor, folder_path, var_list[i]->Name());
+      }
+    }
+  }
+  for (auto& pair : outs) {
+    auto var_name = pair.first;
+    auto var_list = pair.second;
+    for (size_t i = 0; i < var_list.size(); ++i) {
+      if(var_list[i] == nullptr) continue;
+      const framework::Variable& var = var_list[i]->Var();
+      if(!var.IsInitialized()) continue;
+      auto& tensor = var.Get<framework::LoDTensor>();
+      if (tensor.IsInitialized()) {
+        std::string folder_path = "tensor_data/" + op_type + "/Outputs/" + var_name + "/";
+        SaveTensorToFile(tensor, folder_path, var_list[i]->Name());
+      }
+    }
+  }
+}
+
+template <typename T>
+static bool CheckTensorNan(const framework::LoDTensor& tensor) {
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> lock(mutex);
+
+  const T* data = nullptr;
+  if (is_cpu_place(tensor.place())) {
+    data = tensor.data<T>();
+  } else {
+    framework::LoDTensor cpu_tensor;
+    platform::CPUPlace cpu_place;
+    TensorCopy(tensor, cpu_place, &cpu_tensor);
+    data = cpu_tensor.data<T>();
+  }
+
+  for (size_t i = 0; i < tensor.numel(); ++i) {
+    if(std::isnan(data[i])) return true;
+  }
+}
+
+template <typename VarType>
+static void CheckVarsNan(const std::string& op_type,
+                         const NameVarMap<VarType>& ins,
+                         const NameVarMap<VarType>& outs) {
+  static std::mutex mutex;
+  std::lock_guard<std::mutex> lock(mutex);
+
+  for (auto& pair : outs) {
+    auto var_name = pair.first;
+    auto var_list = pair.second;
+    for (size_t i = 0; i < var_list.size(); ++i) {
+      if(var_list[i] == nullptr) continue;
+      const framework::Variable& var = var_list[i]->Var();
+      if(!var.IsInitialized()) continue;
+      auto& tensor = var.Get<framework::LoDTensor>();
+      if (!tensor.IsInitialized()) continue;
+      std::type_index dtype = framework::ToTypeIndex(tensor.type());
+      bool is_tensor_nan = false;
+      if (framework::IsType<const float>(dtype)) {
+        is_tensor_nan = CheckTensorNan<float>(tensor);
+      } else if (framework::IsType<const double>(dtype)) {
+        is_tensor_nan = CheckTensorNan<double>(tensor);
+      } else if (framework::IsType<const int>(dtype)) {
+        is_tensor_nan = CheckTensorNan<int>(tensor);
+      } else if (framework::IsType<const int64_t>(dtype)) {
+        is_tensor_nan = CheckTensorNan<int64_t>(tensor);
+      } else if (framework::IsType<const bool>(dtype)) {
+        is_tensor_nan = CheckTensorNan<bool>(tensor);
+      } else {
+        PADDLE_ENFORCE_EQ(true, false, platform::errors::InvalidArgument(
+            "Invalid data type of %s", op_type));
+      }
+      if(is_tensor_nan) {
+        SaveVarsToFile<VarType>(op_type, ins, outs);
+        PADDLE_ENFORCE_EQ(true, false, platform::errors::InvalidArgument(
+            "Nan value found in OP %s", op_type));
+      }
+    }
+  }
+}
+
 template <typename VarType>
 static void OpBaseRunImpl(const framework::OperatorBase& op,
                           const NameVarMap<VarType>& ins,
@@ -378,6 +502,8 @@ static void OpBaseRunImpl(const framework::OperatorBase& op,
   }
 
   VLOG(4) << LayerDebugString(op.Type(), ins, outs);
+
+  CheckVarsNan<VarType>(op.Type(), ins, outs);
 
   // set the output var
   for (auto& var_pair : outs) {

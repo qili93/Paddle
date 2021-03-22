@@ -161,7 +161,11 @@ static inline std::vector<int> GetStrides(const std::vector<int>& dims,
   return strides;
 }
 
+#ifdef __HIPCC__
+constexpr int kMaxBlockDim = 256;
+#else
 constexpr int kMaxBlockDim = 512;
+#endif
 
 static inline int GetDesiredBlockDim(int block_dim) {
   return block_dim >= kMaxBlockDim
@@ -325,6 +329,8 @@ void TensorReduce(const framework::Tensor& x, framework::Tensor* y,
   int reduce_num = reduce_strides[0] * x_dim[reduce_dim[0]];
   int left_num = 1;
   if (left_dim.size()) left_num = left_strides[0] * x_dim[left_dim[0]];
+
+  LOG(INFO) << "reduce_num=" << reduce_num << ", left_num=" << left_num;
 
   std::vector<int> y_dim(left_dim.size());
   for (int i = 0; i < left_dim.size(); ++i) {
