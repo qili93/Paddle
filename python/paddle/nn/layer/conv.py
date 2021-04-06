@@ -153,7 +153,10 @@ class _ConvNd(layers.Layer):
                                           in_channels != 1 and
                                           out_channels % in_channels == 0):
             self._op_type = 'depthwise_conv2d'
-            self._use_cudnn = False
+            if core.is_compiled_with_rocm():
+                self._use_cudnn = True
+            else:
+                self._use_cudnn = False
 
     def extra_repr(self):
         main_str = '{_in_channels}, {_out_channels}, kernel_size={_kernel_size}'

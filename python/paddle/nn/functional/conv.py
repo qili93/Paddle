@@ -342,6 +342,14 @@ def conv1d(x,
         l_type = 'depthwise_conv2d'
         use_cudnn = False
 
+    if (num_channels == groups and num_channels != 1 and
+            num_filters % num_channels == 0 and core.is_compiled_with_rocm()):
+        l_type = 'depthwise_conv2d'
+        use_cudnn = True
+
+    if (core.is_compiled_with_cuda() and get_flags("FLAGS_conv2d_disable_cudnn")["FLAGS_conv2d_disable_cudnn"]):
+        use_cudnn = False
+
     inputs = {'Input': [x], 'Filter': [weight]}
     attrs = {
         'strides': stride,
@@ -559,6 +567,14 @@ def conv2d(x,
     if (num_channels == groups and num_channels != 1 and
             num_filters % num_channels == 0):
         l_type = 'depthwise_conv2d'
+        use_cudnn = False
+
+    if (num_channels == groups and num_channels != 1 and
+            num_filters % num_channels == 0 and core.is_compiled_with_rocm()):
+        l_type = 'depthwise_conv2d'
+        use_cudnn = True
+
+    if (core.is_compiled_with_cuda() and get_flags("FLAGS_conv2d_disable_cudnn")["FLAGS_conv2d_disable_cudnn"]):
         use_cudnn = False
 
     return _conv_nd(x, weight, bias, stride, padding, padding_algorithm,

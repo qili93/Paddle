@@ -1230,6 +1230,7 @@ create_test_padding_VALID_class(TestDepthwiseConvWithDilation_AsyPadding)
 create_test_padding_VALID_class(TestDepthwiseConvandFuse_AsyPadding)
 create_test_padding_VALID_class(TestDepthwiseConvWithDilationandFuse_AsyPadding)
 
+
 # ------------ test channel last ---------
 create_test_channel_last_class(TestConv2DOp_AsyPadding)
 create_test_channel_last_class(TestWithPad_AsyPadding)
@@ -1247,6 +1248,15 @@ create_test_cudnn_channel_last_class(TestWithPad_AsyPadding)
 create_test_cudnn_channel_last_class(TestWithStride_AsyPadding)
 create_test_cudnn_channel_last_class(TestWithGroup_AsyPadding)
 create_test_cudnn_channel_last_class(TestWithDilation_AsyPadding)
+
+# ------------ depthwise conv2d in MIOPEN ---------
+if core.is_compiled_with_rocm():
+    create_test_cudnn_padding_SAME_class(TestDepthwiseConv_AsyPadding)
+    create_test_cudnn_padding_SAME_class(TestDepthwiseConvWithDilation_AsyPadding)
+    create_test_padding_VALID_class(TestDepthwiseConv_AsyPadding)
+    create_test_padding_VALID_class(TestDepthwiseConvWithDilation_AsyPadding)
+    create_test_cudnn_channel_last_class(TestDepthwiseConv_AsyPadding)
+    create_test_cudnn_channel_last_class(TestDepthwiseConvWithDilation2_AsyPadding)
 
 create_test_cudnn_channel_last_fp16_class(
     TestConv2DOp_AsyPadding, grad_check=False)
