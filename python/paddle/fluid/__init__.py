@@ -179,6 +179,7 @@ def __bootstrap__():
     sysstr = platform.system()
     read_env_flags = [
         'check_nan_inf',
+        'save_tensor_value',
         'benchmark',
         'eager_delete_scope',
         'fraction_of_cpu_memory_to_use',

@@ -24,6 +24,7 @@ endif()
 
 if(WITH_GPU)
     nv_library(nan_inf_utils SRCS nan_inf_utils_detail.cc nan_inf_utils_detail.cu DEPS framework_proto scope place)
+    nv_library(save_op_tensor_value SRCS save_op_tensor_value.cc DEPS framework_proto scope place tensor_formatter)
     nv_library(all_reduce_op_handle SRCS all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory
             dynload_cuda variable_visitor)
     nv_library(fused_all_reduce_op_handle SRCS fused_all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory
@@ -47,6 +48,7 @@ if(WITH_GPU)
     nv_library(fused_broadcast_op_handle SRCS fused_broadcast_op_handle.cc DEPS broadcast_op_handle)
 elseif(WITH_ROCM)
     hip_library(nan_inf_utils SRCS nan_inf_utils_detail.cc nan_inf_utils_detail.cu DEPS framework_proto scope place)
+    hip_library(save_op_tensor_value SRCS save_op_tensor_value.cc DEPS framework_proto scope place tensor_formatter)
     hip_library(all_reduce_op_handle SRCS all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory
             dynload_cuda variable_visitor)
     hip_library(fused_all_reduce_op_handle SRCS fused_all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory
@@ -65,6 +67,7 @@ elseif(WITH_ROCM)
     hip_library(fused_broadcast_op_handle SRCS fused_broadcast_op_handle.cc DEPS broadcast_op_handle)
 else()
     cc_library(nan_inf_utils SRCS nan_inf_utils_detail.cc DEPS framework_proto scope place)
+    cc_library(save_op_tensor_value SRCS save_op_tensor_value.cc DEPS framework_proto scope place tensor_formatter)
     cc_library(all_reduce_op_handle SRCS all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory
              variable_visitor)
     cc_library(fused_all_reduce_op_handle SRCS fused_all_reduce_op_handle.cc DEPS op_handle_base scope lod_tensor ddim memory

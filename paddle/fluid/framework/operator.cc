@@ -22,6 +22,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/data_transform.h"
 #include "paddle/fluid/framework/data_type_transform.h"
 #include "paddle/fluid/framework/details/nan_inf_utils.h"
+#include "paddle/fluid/framework/details/save_op_tensor_value.h"
 #include "paddle/fluid/framework/op_call_stack.h"
 #include "paddle/fluid/framework/shape_inference.h"
 #include "paddle/fluid/framework/transfer_scope_cache.h"
@@ -45,6 +46,7 @@ class LoDTensor;
 
 DECLARE_bool(benchmark);
 DECLARE_bool(check_nan_inf);
+DECLARE_bool(save_tensor_value);
 DECLARE_bool(enable_unused_var_check);
 DEFINE_int32(inner_op_parallelism, 0, "number of threads for inner op");
 
@@ -1182,6 +1184,10 @@ void OperatorWithKernel::RunImpl(const Scope& scope,
 
   if (FLAGS_check_nan_inf) {
     framework::details::CheckOpHasNanOrInf(*this, exec_scope, place);
+  }
+
+  if (FLAGS_save_tensor_value) {
+    framework::details::SaveOpTesnorValue(*this, exec_scope, place);
   }
 
   // To solve issue #15032, have a discussion with @Luotao for cpu inference,
