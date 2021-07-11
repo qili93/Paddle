@@ -181,8 +181,9 @@ add_subdirectory(benchmark)
 cc_test(op_debug_string_test SRCS op_debug_string_test.cc DEPS elementwise_add_op)
 if (WITH_ASCEND_CL)
     cc_test(transpose_op_npu_test SRCS transpose_op_npu_test.cc DEPS op_registry transpose_op scope device_context enforce executor)
+    cc_test(stack_op_npu_test SRCS stack_op_npu_test.cc DEPS op_registry stack_op scope device_context enforce executor)
+    cc_test(unstack_op_npu_test SRCS unstack_op_npu_test.cc DEPS op_registry unstack_op scope device_context enforce executor)
 endif()
-
 
 if(WITH_MKLDNN)
 include(mkldnn/inplace_op_tests.cmake)
