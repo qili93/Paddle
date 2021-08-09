@@ -711,8 +711,11 @@ class InterpolateV2GradMaker : public framework::SingleGradOpMaker<T> {
   }
 };
 
+// #ifndef PADDLE_WITH_ASCEND_CL
+// NPU need input tensor for grad compute
 DECLARE_NO_NEED_BUFFER_VARS_INFERER(InterpolateV2GradNoNeedBufferVarsInferer,
                                     "X");
+// #endif
 
 }  // namespace operators
 }  // namespace paddle
@@ -725,14 +728,20 @@ REGISTER_OPERATOR(bilinear_interp_v2, ops::InterpolateV2Op,
                   ops::InterpolateV2OpMaker,
                   ops::InterpolateV2GradMaker<paddle::framework::OpDesc>,
                   ops::InterpolateV2GradMaker<paddle::imperative::OpBase>);
-REGISTER_OPERATOR(bilinear_interp_v2_grad, ops::InterpolateV2OpGrad,
-                  ops::InterpolateV2GradNoNeedBufferVarsInferer);
 REGISTER_OPERATOR(nearest_interp_v2, ops::InterpolateV2Op,
                   ops::InterpolateV2OpMaker,
                   ops::InterpolateV2GradMaker<paddle::framework::OpDesc>,
                   ops::InterpolateV2GradMaker<paddle::imperative::OpBase>);
+#ifdef PADDLE_WITH_ASCEND_CL
+REGISTER_OPERATOR(bilinear_interp_v2_grad, ops::InterpolateV2OpGrad);
+REGISTER_OPERATOR(nearest_interp_v2_grad, ops::InterpolateV2OpGrad);
+#else
+REGISTER_OPERATOR(bilinear_interp_v2_grad, ops::InterpolateV2OpGrad,
+                  ops::InterpolateV2GradNoNeedBufferVarsInferer);
 REGISTER_OPERATOR(nearest_interp_v2_grad, ops::InterpolateV2OpGrad,
                   ops::InterpolateV2GradNoNeedBufferVarsInferer);
+#endif
+
 REGISTER_OPERATOR(trilinear_interp_v2, ops::InterpolateV2Op,
                   ops::InterpolateV2OpMaker,
                   ops::InterpolateV2GradMaker<paddle::framework::OpDesc>,
