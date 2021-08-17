@@ -183,6 +183,8 @@ if (WITH_ASCEND_CL)
     cc_test(transpose_op_npu_test SRCS transpose_op_npu_test.cc DEPS op_registry transpose_op scope device_context enforce executor)
 endif()
 
+# for debug
+cc_test(leaky_relu_test SRCS leaky_relu_test.cc DEPS op_registry activation_op scope device_context enforce executor)
 
 if(WITH_MKLDNN)
 include(mkldnn/inplace_op_tests.cmake)
