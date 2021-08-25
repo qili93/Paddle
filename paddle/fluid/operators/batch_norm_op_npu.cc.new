@@ -32,7 +32,9 @@ class NPUBatchNormOpKernel : public framework::OpKernel<T> {
     bool training = !test_mode && !use_global_stats;
 
     const std::string data_layout_str = ctx.Attr<std::string>("data_layout");
-    DataLayout data_layout = framework::StringToDataLayout(data_layout_str);
+    // DataLayout data_layout = framework::StringToDataLayout(data_layout_str);
+
+    // LOG(INFO) << "data_layout = " << data_layout;
 
     const auto *x = ctx.Input<Tensor>("X");
     const auto &x_dims = x->dims();
@@ -48,19 +50,6 @@ class NPUBatchNormOpKernel : public framework::OpKernel<T> {
 
     auto *y = ctx.Output<Tensor>("Y");
     y->mutable_data<T>(ctx.GetPlace());
-
-    PADDLE_ENFORCE_EQ(
-        x->layout(), data_layout,
-        platform::errors::InvalidArgument(
-            "BatchNorm OP's input tensor x layout should equal to attr "
-            "data_layout, but got tensor layout <%s>, attr layout <%s>",
-            framework::DataLayoutToString(x->layout()), data_layout_str));
-    PADDLE_ENFORCE_EQ(
-        y->layout(), data_layout,
-        platform::errors::InvalidArgument(
-            "BatchNorm OP's output tensor y layout should equal to attr "
-            "data_layout, but got tensor layout <%s>, attr layout <%s>",
-            framework::DataLayoutToString(y->layout()), data_layout_str));
 
     auto stream = ctx.template device_context<paddle::platform::NPUDeviceContext>().stream();
     if (!training) {
@@ -110,7 +99,7 @@ class NPUBatchNormGradOpKernel : public framework::OpKernel<T> {
     const auto *x = ctx.Input<Tensor>("X");
     const auto *d_y = ctx.Input<Tensor>(framework::GradVarName("Y"));
     const auto *scale = ctx.Input<Tensor>("Scale");
-    const auto *bias = ctx.Input<Tensor>("Bias");
+    // const auto *bias = ctx.Input<Tensor>("Bias");
     const auto *saved_mean = ctx.Input<Tensor>("SavedMean");
     // SavedVariance have been reverted in forward operator
     const auto *saved_inv_variance = ctx.Input<Tensor>("SavedVariance");
@@ -118,37 +107,15 @@ class NPUBatchNormGradOpKernel : public framework::OpKernel<T> {
     bool use_global_stats = ctx.Attr<bool>("use_global_stats");
     const bool is_test = ctx.Attr<bool>("is_test");
     const float epsilon = ctx.Attr<float>("epsilon");
-    DataLayout data_layout = framework::StringToDataLayout(data_layout_str);
+    // DataLayout data_layout = framework::StringToDataLayout(data_layout_str);
 
     auto *d_x = ctx.Output<Tensor>(framework::GradVarName("X"));
     auto *d_scale = ctx.Output<Tensor>(framework::GradVarName("Scale"));
     auto *d_bias = ctx.Output<Tensor>(framework::GradVarName("Bias"));
 
-    PADDLE_ENFORCE_EQ(
-        x->layout(), data_layout,
-        platform::errors::InvalidArgument(
-            "BatchNorm OP's input tensor x layout should equal to attr "
-            "data_layout, but got tensor layout <%s>, attr layout <%s>",
-            framework::DataLayoutToString(x->layout()), data_layout_str));
-    PADDLE_ENFORCE_EQ(
-        d_y->layout(), data_layout,
-        platform::errors::InvalidArgument(
-            "BatchNorm OP's input tensor d_y layout should equal to attr "
-            "data_layout, but got tensor layout <%s>, attr layout <%s>",
-            framework::DataLayoutToString(d_y->layout()), data_layout_str));
-
     use_global_stats = is_test || use_global_stats;
 
-    Tensor scale_grad_tmp(scale->type());
-    Tensor bias_grad_tmp(bias->type());
-    if (d_scale == nullptr) {
-      scale_grad_tmp.Resize(scale->dims());
-      d_scale = &scale_grad_tmp;
-    }
-    if (d_bias == nullptr) {
-      bias_grad_tmp.Resize(bias->dims());
-      d_bias = &bias_grad_tmp;
-    }
+
 
     auto stream = ctx.template device_context<paddle::platform::NPUDeviceContext>().stream();
     if (d_scale && d_bias) {

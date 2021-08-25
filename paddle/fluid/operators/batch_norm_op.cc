@@ -20,9 +20,20 @@ limitations under the License. */
 #ifdef PADDLE_WITH_MKLDNN
 #include "paddle/fluid/platform/mkldnn_helper.h"
 #endif
+// #include "paddle/fluid/operators/tensor_formatter.h"
 
 namespace paddle {
 namespace operators {
+
+// void PrintTensor(const Tensor* tensor, const std::string name, const std::string msg) {
+//   std::cout << "=================== Print Tensor <" << name << ">, Place <" << tensor->place() << "> ===================" <<std::endl;
+//   framework::LoDTensor cpu_tensor;
+//   cpu_tensor.Resize(tensor->dims());
+//   framework::TensorCopySync(*tensor, platform::CPUPlace(), &cpu_tensor);
+
+//   operators::TensorFormatter formatter;
+//   formatter.Print(cpu_tensor, name, msg);
+// }
 
 void BatchNormOp::InferShape(framework::InferShapeContext *ctx) const {
   OP_INOUT_CHECK(ctx->HasInput("X"), "Input", "X", "BatchNorm");
@@ -44,6 +55,11 @@ void BatchNormOp::InferShape(framework::InferShapeContext *ctx) const {
     OP_INOUT_CHECK(ctx->HasOutput("SavedVariance"), "Output", "SavedVariance",
                    "BatchNorm");
   }
+
+  // auto mean = ctx->Inputs("Mean")[0];
+  // auto mean_out = ctx->Outputs("MeanOut")[0];
+  // std::cout << "mean = " << mean << std::endl;
+  // std::cout << "mean_out = " << mean_out << std::endl;
 
   // make sure Mean/MeanOut and Variance/VarianceOut share memory in Python
   PADDLE_ENFORCE_EQ(ctx->Inputs("Mean")[0], ctx->Outputs("MeanOut")[0],
@@ -304,6 +320,15 @@ class BatchNormKernel<platform::CPUDeviceContext, T>
 
     bool global_stats = test_mode || use_global_stats;
 
+    // PrintTensor(ctx.Input<Tensor>("X"), "X", "forward - input");
+    // PrintTensor(ctx.Input<Tensor>("Scale"), "Scale", "forward - input");
+    // PrintTensor(ctx.Input<Tensor>("Bias"), "Bias", "forward - input");
+    // PrintTensor(ctx.Input<Tensor>("Mean"), "Mean", "forward - input");
+    // PrintTensor(ctx.Input<Tensor>("Variance"), "Variance", "forward - input");
+    // if (ctx.HasInput("MomentumTensor")) {
+    //   PrintTensor(ctx.Input<Tensor>("MomentumTensor"), "MomentumTensor", "forward - input");
+    // }
+
     const std::string data_layout_str = ctx.Attr<std::string>("data_layout");
     DataLayout data_layout = framework::StringToDataLayout(data_layout_str);
 
@@ -465,6 +490,11 @@ class BatchNormKernel<platform::CPUDeviceContext, T>
         PADDLE_THROW(platform::errors::InvalidArgument(
             "Unknown storage order: %d", data_layout));
     }
+    // PrintTensor(y, "Y", "forward - output");
+    // PrintTensor(mean_out, "MeanOut", "forward- output");
+    // PrintTensor(variance_out, "VarianceOut", "forward- output");
+    // PrintTensor(saved_mean, "SavedMean", "forward- output");
+    // PrintTensor(saved_variance, "SavedVariance", "forward- output");
   }
 };
 
@@ -600,6 +630,23 @@ class BatchNormGradKernel<platform::CPUDeviceContext, T>
     auto *d_bias = ctx.Output<Tensor>(framework::GradVarName("Bias"));
 
     use_global_stats = is_test || use_global_stats;
+
+    // PrintTensor(ctx.Input<Tensor>(framework::GradVarName("Y")), framework::GradVarName("Y"), "backward");
+    // PrintTensor(ctx.Input<Tensor>("Scale"), "Scale", "backward");
+    // PrintTensor(ctx.Input<Tensor>("Bias"), "Bias", "backward");
+
+    // PrintTensor(ctx.Input<Tensor>("SavedMean"), "SavedMean", "backward");
+    // PrintTensor(ctx.Input<Tensor>("SavedVariance"), "SavedVariance", "backward");
+    // if (ctx.HasInput("Y")) {
+    //   PrintTensor(ctx.Input<Tensor>("Y"), "Y", "backward");
+    // }
+    // if (ctx.HasInput("X")) {
+    //   PrintTensor(ctx.Input<Tensor>("X"), "X", "backward");
+    // }
+    // if (use_global_stats) {
+    //   PrintTensor(ctx.Input<Tensor>("Mean"), "Mean", "backward");
+    //   PrintTensor(ctx.Input<Tensor>("Variance"), "Variance", "backward");
+    // }
 
     // batch_norm with inplace as false will take X as grad input, which
     // is same as cuDNN batch_norm backward calculation, batch_norm
@@ -830,6 +877,9 @@ class BatchNormGradKernel<platform::CPUDeviceContext, T>
         PADDLE_THROW(platform::errors::InvalidArgument(
             "Unknown storage order: %s", data_layout_str));
     }
+    // PrintTensor(ctx.Output<Tensor>(framework::GradVarName("X")), framework::GradVarName("X"), "backward");
+    // PrintTensor(ctx.Output<Tensor>(framework::GradVarName("Scale")), framework::GradVarName("Scale"), "backward");
+    // PrintTensor(ctx.Output<Tensor>(framework::GradVarName("Bias")), framework::GradVarName("Bias"), "backward");
   }
 };
 
