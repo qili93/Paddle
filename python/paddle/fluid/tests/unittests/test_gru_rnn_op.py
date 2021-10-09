@@ -43,6 +43,8 @@ class TestGRUOp(OpTest):
         return weight_names
 
     def setUp(self):
+        if core.is_compiled_with_rocm():
+            self._cpu_only = True
         self.op_type = "rnn"
         self.dtype = "float64"
         self.sequence_length = np.array(
