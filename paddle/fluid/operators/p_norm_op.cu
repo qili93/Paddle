@@ -27,6 +27,7 @@ namespace cub = hipcub;
 #include "paddle/fluid/operators/reduce_ops/reduce_op.cu.h"
 #include "paddle/fluid/operators/reduce_ops/reduce_op.h"
 #include "paddle/fluid/platform/float16.h"
+#include "paddle/fluid/operators/tensor_formatter.h"
 
 namespace paddle {
 namespace operators {
@@ -113,6 +114,11 @@ class PnormCUDAKernel : public framework::OpKernel<T> {
     reduce_axis = GetReduceDim(reduce_axis, xdim.size(), asvector);
     auto stream = ctx.cuda_device_context().stream();
 
+    LOG(INFO) << "porder = " << porder;
+    LOG(INFO) << "asvector = " << asvector;
+    LOG(INFO) << "axis = " << axis;
+    LOG(INFO) << "xdim = " << xdim.to_str();
+
     using MT = typename details::MPTypeTrait<T>::Type;
     if (porder == 0) {
       TensorReduceImpl<T, T, kps::AddFunctor, NonzeroFunctor<T>>(
@@ -130,6 +136,10 @@ class PnormCUDAKernel : public framework::OpKernel<T> {
       TensorReduceImpl<T, T, kps::AddFunctor, UnsignedPowFunctor<T>>(
           ctx.cuda_device_context(), *in_x, out_norm,
           UnsignedPowFunctor<T>(porder), reduce_axis, stream);
+
+      // for debug
+      operators::TensorFormatter formatter;
+      LOG(INFO) << formatter.Format(*out_norm, "out_norm", "");
 
       const framework::Tensor* tmp_norm = out_norm;
       std::vector<const framework::Tensor*> ins = {tmp_norm};

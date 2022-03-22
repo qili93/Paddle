@@ -301,6 +301,17 @@ struct OneDimIndexCal {
   int stride;
 };
 
+// for debug
+static inline void print_vector(const std::vector<int> dims, const std::string name) {
+  std::stringstream log_stream;
+  log_stream << name << " = {";
+  for (auto dim : dims) {
+    log_stream << dim << ", ";
+  }
+  log_stream << "}" << std::endl;
+  LOG(INFO) << log_stream.str();
+};
+
 // reduce config
 template <typename Ty>
 struct ReduceConfig {
@@ -310,17 +321,117 @@ struct ReduceConfig {
 
   // get the parameters of reduceKernel
   void Run() {
+    LOG(INFO) << "---------------- Origin -----------------";
+    print_vector(reduce_dims_origin, "reduce_dims_origin");
+    print_vector(reduce_dim, "reduce_dim");
+    print_vector(x_dim, "x_dim");
+    print_vector(left_dim, "left_dim");
+    print_vector(x_strides, "x_strides");
+    print_vector(left_strides, "left_strides");
+    print_vector(reduce_strides, "reduce_strides");
+    LOG(INFO) << "reduce_type = " << reduce_type;
+    LOG(INFO) << "reduce_num = " << reduce_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "blocking_size = " << blocking_size;
+    LOG(INFO) << "should_reduce_again = " << should_reduce_again;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block.x = " << block.x;
+    LOG(INFO) << "block.y = " << block.y;
+    LOG(INFO) << "block.z = " << block.z;
+    LOG(INFO) << "grid.x = " << grid.x;
+    LOG(INFO) << "grid.y = " << grid.y;
+    LOG(INFO) << "grid.z = " << grid.z;
     // step1: update the reduce_dim left_dim and x_dim
     SetReduceDim();
+    LOG(INFO) << "---------------- SetReduceDim -----------------";
+    print_vector(reduce_dims_origin, "reduce_dims_origin");
+    print_vector(reduce_dim, "reduce_dim");
+    print_vector(x_dim, "x_dim");
+    print_vector(left_dim, "left_dim");
+    print_vector(x_strides, "x_strides");
+    print_vector(left_strides, "left_strides");
+    print_vector(reduce_strides, "reduce_strides");
+    LOG(INFO) << "reduce_type = " << reduce_type;
+    LOG(INFO) << "reduce_num = " << reduce_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "blocking_size = " << blocking_size;
+    LOG(INFO) << "should_reduce_again = " << should_reduce_again;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block.x = " << block.x;
+    LOG(INFO) << "block.y = " << block.y;
+    LOG(INFO) << "block.z = " << block.z;
+    LOG(INFO) << "grid.x = " << grid.x;
+    LOG(INFO) << "grid.y = " << grid.y;
+    LOG(INFO) << "grid.z = " << grid.z;
 
     // step2: get the strides of dim for reduceAny and reduceLastDim
     SetStrides();
+    LOG(INFO) << "---------------- SetStrides -----------------";
+    print_vector(reduce_dims_origin, "reduce_dims_origin");
+    print_vector(reduce_dim, "reduce_dim");
+    print_vector(x_dim, "x_dim");
+    print_vector(left_dim, "left_dim");
+    print_vector(x_strides, "x_strides");
+    print_vector(left_strides, "left_strides");
+    print_vector(reduce_strides, "reduce_strides");
+    LOG(INFO) << "reduce_type = " << reduce_type;
+    LOG(INFO) << "reduce_num = " << reduce_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "blocking_size = " << blocking_size;
+    LOG(INFO) << "should_reduce_again = " << should_reduce_again;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block.x = " << block.x;
+    LOG(INFO) << "block.y = " << block.y;
+    LOG(INFO) << "block.z = " << block.z;
+    LOG(INFO) << "grid.x = " << grid.x;
+    LOG(INFO) << "grid.y = " << grid.y;
+    LOG(INFO) << "grid.z = " << grid.z;
 
     // step3: get the type of reduce
     SetReduceType();
+    LOG(INFO) << "---------------- SetReduceType -----------------";
+    print_vector(reduce_dims_origin, "reduce_dims_origin");
+    print_vector(reduce_dim, "reduce_dim");
+    print_vector(x_dim, "x_dim");
+    print_vector(left_dim, "left_dim");
+    print_vector(x_strides, "x_strides");
+    print_vector(left_strides, "left_strides");
+    print_vector(reduce_strides, "reduce_strides");
+    LOG(INFO) << "reduce_type = " << reduce_type;
+    LOG(INFO) << "reduce_num = " << reduce_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "blocking_size = " << blocking_size;
+    LOG(INFO) << "should_reduce_again = " << should_reduce_again;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block.x = " << block.x;
+    LOG(INFO) << "block.y = " << block.y;
+    LOG(INFO) << "block.z = " << block.z;
+    LOG(INFO) << "grid.x = " << grid.x;
+    LOG(INFO) << "grid.y = " << grid.y;
+    LOG(INFO) << "grid.z = " << grid.z;
 
     // step4: set the block and grid for launch kernel
     SetBlockDim();
+    LOG(INFO) << "---------------- SetBlockDim -----------------";
+    print_vector(reduce_dims_origin, "reduce_dims_origin");
+    print_vector(reduce_dim, "reduce_dim");
+    print_vector(x_dim, "x_dim");
+    print_vector(left_dim, "left_dim");
+    print_vector(x_strides, "x_strides");
+    print_vector(left_strides, "left_strides");
+    print_vector(reduce_strides, "reduce_strides");
+    LOG(INFO) << "reduce_type = " << reduce_type;
+    LOG(INFO) << "reduce_num = " << reduce_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "blocking_size = " << blocking_size;
+    LOG(INFO) << "should_reduce_again = " << should_reduce_again;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block.x = " << block.x;
+    LOG(INFO) << "block.y = " << block.y;
+    LOG(INFO) << "block.z = " << block.z;
+    LOG(INFO) << "grid.x = " << grid.x;
+    LOG(INFO) << "grid.y = " << grid.y;
+    LOG(INFO) << "grid.z = " << grid.z;
   }
 
   // when should_reduce_again is true, we need malloc temp space for temp data
@@ -585,6 +696,10 @@ struct ReduceConfig {
     dim3 block_dim(block_num, 1, 1);
     dim3 grid_dim(left_num, 1, 1);
     blocking_size = reduce_num;
+    LOG(INFO) << "reduce_last_dim = " << reduce_last_dim;
+    LOG(INFO) << "block_num = " << block_num;
+    LOG(INFO) << "left_num = " << left_num;
+    LOG(INFO) << "reduce_num = " << reduce_num;
 #ifdef PADDLE_WITH_XPU_KP
     if (reduce_last_dim) {
       block_dim.x = 64;
@@ -593,6 +708,18 @@ struct ReduceConfig {
       grid_dim.y = 8;
     } else {
       block_dim.x = 64;
+      block_dim.y = left_num;
+      grid_dim.x = 8;
+      grid_dim.y = 1;
+    }
+#elif defined(PADDLE_WITH_HIP)
+    if (reduce_last_dim) {
+      block_dim.x = 32;
+      block_dim.y = reduce_num;
+      grid_dim.x = 1;
+      grid_dim.y = 8;
+    } else {
+      block_dim.x = 32;
       block_dim.y = left_num;
       grid_dim.x = 8;
       grid_dim.y = 1;
@@ -628,6 +755,16 @@ struct ReduceConfig {
   dim3 block;
   dim3 grid;
 };
+
+// #ifdef __HIPCC__
+// #define KERNEL_PRINT(__FORMAT, ...)              \
+//   printf("%03d: [tid.x=<%lu> tid.y=<%lu> bid.x=<%lu> bid.y=<%lu>]: " __FORMAT "\n", \
+//   __LINE__, hipThreadIdx_x, hipThreadIdx_y, hipBlockIdx_x, hipBlockIdx_y, ##__VA_ARGS__);
+// #else
+// #define KERNEL_PRINT(__FORMAT, ...)              \
+//   printf("%03d: [tid.x=<%d> tid.y=<%d> bid.x=<%d> bid.y=<%d>]: " __FORMAT "\n", \
+//   __LINE__, threadIdx.x, threadIdx.y, blockIdx.x, blockIdx.y, ##__VA_ARGS__);
+// #endif
 
 // when reduce_dim.size() == 1 and reduce_dim[0] == x_dim.size() - 1, or
 // when reduce_dim.size() != 1 and reduce_dim.size() != x_dim.size(), this
@@ -680,6 +817,10 @@ __global__ void ReduceAnyKernel(const Tx* x,
     store_offset = block.BlockIdY() * left_num + left_idx;
     tid = THREAD_ID_Y;
   }
+
+  // KERNEL_PRINT("input_idx=%d, left_idx=%d, stride=%d", input_idx, left_idx, stride);
+  KERNEL_PRINT("input_idx=%d, left_idx=%d, stride=%d, block_size=%d, need_store=%d, loop_left=%d, store_offset=%d, stride_left=%d, tid=%d", input_idx, left_idx, stride, block_size, need_store, loop_left, store_offset, stride_left, tid);
+
   // calculate the offset, means the addr where each thread really start.
   // 1. reduce for each thread
   MPType input_compute[REDUCE_VEC_SIZE];
@@ -692,6 +833,7 @@ __global__ void ReduceAnyKernel(const Tx* x,
     // load REDUCE_VEC_SIZE data once, and then compute
     int bound = reduce_num - (REDUCE_VEC_SIZE - 1) * stride;
     input_idx = input_idx_tmp;
+    KERNEL_PRINT("input_offset=%d, input=%f, reduce_var=%f, bound=%d, input_idx=%d", input_offset, static_cast<float>(*input), static_cast<float>(reduce_var), bound, input_idx);
     for (; input_idx + block_size < bound;
          input_idx += REDUCE_VEC_SIZE * stride) {
       kps::ReadDataReduce<Tx,
@@ -724,6 +866,7 @@ __global__ void ReduceAnyKernel(const Tx* x,
     }
 
     kps::Init<MPType, REDUCE_VEC_SIZE>(&input_compute[0], init);
+    KERNEL_PRINT("input_compute[0]=%f", static_cast<float>(input_compute[0]));
     kps::ReadDataReduce<Tx,
                         MPType,
                         1,
@@ -742,6 +885,7 @@ __global__ void ReduceAnyKernel(const Tx* x,
                               stride,
                               transformer,
                               reduce_last_dim);
+    KERNEL_PRINT("input_compute[0]=%f, reduce_var=%f", static_cast<float>(input_compute[0]), static_cast<float>(reduce_var));
     kps::Reduce<MPType,
                 REDUCE_VEC_SIZE,
                 1,
@@ -749,13 +893,16 @@ __global__ void ReduceAnyKernel(const Tx* x,
                 ReduceOp,
                 kps::details::ReduceMode::kLocalMode>(
         &reduce_var, &input_compute[0], reducer, reduce_last_dim);
-
+    KERNEL_PRINT("input_compute[0]=%f, reduce_var=%f", static_cast<float>(input_compute[0]), static_cast<float>(reduce_var));
     kps::Reduce<MPType, 1, 1, 1, ReduceOp, kps::details::kGlobalMode>(
         &reduce_var, &reduce_var, reducer, reduce_last_dim);
-
+    KERNEL_PRINT("input_compute[0]=%f, reduce_var=%f", static_cast<float>(input_compute[0]), static_cast<float>(reduce_var));
     Ty result = static_cast<Ty>(reduce_var);
+    KERNEL_PRINT("result=%f, reduce_var=%f", static_cast<float>(result), static_cast<float>(reduce_var));
     kps::details::WriteData<Ty>(
         y + store_offset + i, &result, static_cast<int>(need_store));
+    KERNEL_PRINT("store_offset=%d, i=%d, need_store=%d, result=%f, y+store_offset+i=%f", 
+                  store_offset, i, need_store, static_cast<float>(result), static_cast<float>(*(y+store_offset+i)));
   }
 }
 
@@ -867,10 +1014,15 @@ static void LaunchReduceKernel(const Tx* x_data,
 #ifdef PADDLE_WITH_XPU_KP
     auto grid_num = 8;
     auto block_num = 64;
+#elif defined(PADDLE_WITH_HIP)
+    auto grid_num = 8;
+    auto block_num = 16;
 #else
     auto grid_num = config.grid;
     auto block_num = config.block;
 #endif
+    LOG(INFO) << "grid_num = " << grid_num;
+    LOG(INFO) << "block_num = " << block_num;
     ReduceAnyKernel<Tx,
                     Ty,
                     MPType,
@@ -910,6 +1062,9 @@ static void LaunchReduceKernel(const Tx* x_data,
 #ifdef PADDLE_WITH_XPU_KP
     auto grid_num = 8;
     auto block_num = 64;
+#elif defined(PADDLE_WITH_HIP)
+    auto grid_num = 8;
+    auto block_num = 32;
 #else
     auto grid_num = config.grid;
     auto block_num = config.block;
@@ -952,6 +1107,9 @@ static void LaunchReduceKernel(const Tx* x_data,
 #ifdef PADDLE_WITH_XPU_KP
     grid = 8;
     block = 64;
+#elif defined(PADDLE_WITH_HIP)
+    grid = 8;
+    block = 32;
 #endif
     ReduceHigherDimKernel<
         Ty,
@@ -1051,6 +1209,19 @@ void ReduceKernel(const KPDevice& dev_ctx,
   // temp_output should be stored temp_data in output_data space or stored in
   // y_data;
 
+  LOG(INFO) << "config.reduce_type = " << config.reduce_type;
+  LOG(INFO) << "config.reduce_num = " << config.reduce_num;
+  LOG(INFO) << "config.left_num = " << config.left_num;
+  LOG(INFO) << "config.blocking_size = " << config.blocking_size;
+  LOG(INFO) << "config.should_reduce_again = " << config.should_reduce_again;
+  LOG(INFO) << "config.reduce_last_dim = " << config.reduce_last_dim;
+  LOG(INFO) << "config.block.x = " << config.block.x;
+  LOG(INFO) << "config.block.y = " << config.block.y;
+  LOG(INFO) << "config.block.z = " << config.block.z;
+  LOG(INFO) << "config.grid.x = " << config.grid.x;
+  LOG(INFO) << "config.grid.y = " << config.grid.y;
+  LOG(INFO) << "config.grid.z = " << config.grid.z;
+
   phi::DDim tmp_ddim;
   phi::DenseTensor tmp;
 
@@ -1098,6 +1269,9 @@ void ReduceKernel(const KPDevice& dev_ctx,
 #ifdef PADDLE_WITH_XPU_KP
     auto grid_num = 8;
     auto block_num = 64;
+# elif  defined(PADDLE_WITH_HIP)
+    auto grid_num = 8;
+    auto block_num = 32;
 #else
     auto grid_num = config.grid;
     auto block_num = config.block;
@@ -1127,6 +1301,9 @@ void ReduceKernel(const KPDevice& dev_ctx,
 #ifdef PADDLE_WITH_XPU_KP
       grid = 8;
       block = 64;
+#elif defined(PADDLE_WITH_HIP)
+      grid = 8;
+      block = 32;
 #endif
       ReduceHigherDimKernel<
           Ty,

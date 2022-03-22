@@ -115,13 +115,25 @@ struct BroadcastConfig {
   }
 };
 
+#ifdef __HIPCC__
+#define KERNEL_PRINT(__FORMAT, ...)              \
+  printf("%03d: [tid.x=<%lu> tid.y=<%lu> bid.x=<%lu> bid.y=<%lu>]: " __FORMAT "\n", \
+  __LINE__, hipThreadIdx_x, hipThreadIdx_y, hipBlockIdx_x, hipBlockIdx_y, ##__VA_ARGS__);
+#else
+#define KERNEL_PRINT(__FORMAT, ...)              \
+  printf("%03d: [tid.x=<%d> tid.y=<%d> bid.x=<%d> bid.y=<%d>]: " __FORMAT "\n", \
+  __LINE__, threadIdx.x, threadIdx.y, blockIdx.x, blockIdx.y, ##__VA_ARGS__);
+#endif
+
 template <typename T>
 __device__ __forceinline__ void WriteData(T* dst,
                                           T* __restrict__ src,
                                           int num) {
+  KERNEL_PRINT("num=%d, src[0]=%f, dst[0]=%f", num, static_cast<float>(src[0]), static_cast<float>(dst[0]));
   for (int i = 0; i < num; i++) {
     dst[i] = src[i];
   }
+  KERNEL_PRINT("num=%d, src[0]=%f, dst[0]=%f", num, static_cast<float>(src[0]), static_cast<float>(dst[0]));
 }
 
 template <typename T>
