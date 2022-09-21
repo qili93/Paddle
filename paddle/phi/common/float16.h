@@ -14,7 +14,9 @@
 
 #pragma once
 
+#ifdef PADDLE_WITH_AVX
 #include <immintrin.h>
+#endif
 #include <stdint.h>
 
 #include <cmath>
