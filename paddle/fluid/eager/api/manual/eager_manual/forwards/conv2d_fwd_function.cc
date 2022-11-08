@@ -26,6 +26,7 @@ DECLARE_bool(check_nan_inf);
 paddle::experimental::Tensor conv2d_ad_func(
     const paddle::experimental::Tensor& input,
     const paddle::experimental::Tensor& filter,
+    const paddle::experimental::Tensor& bias,
     std::vector<int> strides,
     std::vector<int> paddings,
     std::string padding_algorithm,
@@ -51,6 +52,8 @@ paddle::experimental::Tensor conv2d_ad_func(
         egr::EagerAmpAutoCast("input", input, amp_dst_dtype, op_name);
     auto new_filter =
         egr::EagerAmpAutoCast("filter", filter, amp_dst_dtype, op_name);
+    auto new_bias =
+        egr::EagerAmpAutoCast("bias", bias, amp_dst_dtype, op_name);
 
     {
       paddle::imperative::AutoCastGuard guard(
@@ -58,6 +61,7 @@ paddle::experimental::Tensor conv2d_ad_func(
           paddle::imperative::AmpLevel::O0);
       return conv2d_ad_func(new_input,
                             new_filter,
+                            new_bias,
                             strides,
                             paddings,
                             padding_algorithm,
@@ -83,6 +87,7 @@ paddle::experimental::Tensor conv2d_ad_func(
     egr::Controller::Instance().DisableLayoutAutoTune();
     auto out = conv2d_ad_func(new_input,
                               filter,
+                              bias,
                               strides,
                               paddings,
                               padding_algorithm,
@@ -107,6 +112,7 @@ paddle::experimental::Tensor conv2d_ad_func(
           << "conv2d_ad_func";
   auto api_result = paddle::experimental::conv2d(input,
                                                  filter,
+                                                 bias,
                                                  strides,
                                                  paddings,
                                                  padding_algorithm,

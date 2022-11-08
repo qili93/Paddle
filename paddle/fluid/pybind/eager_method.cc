@@ -113,6 +113,9 @@ static PyObject* tensor_method_numpy(TensorObject* self,
         nullptr);
     return array;
   }
+  // if (self->tensor.storage_properties_initialized()) {
+
+  // }
   auto tensor_dims = self->tensor.shape();
   auto numpy_dtype = TensorDtype2NumpyDtype(self->tensor.type());
   auto sizeof_dtype = paddle::framework::DataTypeSize(self->tensor.type());

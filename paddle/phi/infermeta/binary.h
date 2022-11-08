@@ -78,6 +78,7 @@ void ComplexInferMeta(const MetaTensor& x,
 
 void ConvInferMeta(const MetaTensor& input,
                    const MetaTensor& filter,
+                   const MetaTensor& bias,
                    const std::vector<int>& strides,
                    const std::vector<int>& paddings,
                    const std::string& padding_algorithm,

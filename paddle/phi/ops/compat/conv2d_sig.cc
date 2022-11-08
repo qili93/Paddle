@@ -18,7 +18,7 @@ namespace phi {
 
 KernelSignature Conv2dOpArgumentMapping(const ArgumentMappingContext& ctx) {
   return KernelSignature("conv2d",
-                         {"Input", "Filter"},
+                         {"Input", "Filter", "Bias"},
                          {"strides",
                           "paddings",
                           "padding_algorithm",

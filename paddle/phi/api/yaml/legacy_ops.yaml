@@ -434,7 +434,7 @@
   backward : conj_grad
 
 - op : conv2d
-  args : (Tensor input, Tensor filter, int[] strides, int[] paddings, str padding_algorithm, int[] dilations, int groups, str data_format)
+  args : (Tensor input, Tensor filter, Tensor bias, int[] strides, int[] paddings, str padding_algorithm, int[] dilations, int groups, str data_format)
   output : Tensor
   infer_meta :
     func : ConvInferMeta

@@ -213,7 +213,7 @@ class MNIST(Dataset):
                     for i in range(buffer_size):
                         self.images.append(images[i, :])
                         self.labels.append(
-                            np.array([labels[i]]).astype('int64')
+                            np.array([labels[i]]).astype('int32')
                         )
 
     def __getitem__(self, idx):
@@ -227,9 +227,9 @@ class MNIST(Dataset):
             image = self.transform(image)
 
         if self.backend == 'pil':
-            return image, label.astype('int64')
+            return image, label.astype('int32')
 
-        return image.astype(self.dtype), label.astype('int64')
+        return image.astype(self.dtype), label.astype('int32')
 
     def __len__(self):
         return len(self.labels)
