@@ -222,6 +222,25 @@ void DenseTensor::ResizeAndAllocate(const DDim& dims) {
   }
 }
 
+void DenseTensor::ReAllocateBySize(const int64_t size) {
+  if (holder_ != nullptr && place().GetType() != AllocationType::UNDEFINED) {
+    VLOG(1) << "ReAllocate for DenseTensor with requested size: " << size;
+    mutable_data(place(), size);
+  }
+}
+
+// void DenseTensor::StorageAllocate() {
+//   PADDLE_ENFORCE_NOT_NULL(
+//       storage_properties_,
+//       phi::errors::PreconditionNotMet(
+//           "The storage_properties of current DenseTensor is nullptr."));
+//   auto storage_dims = static_cast<NPUStorageProperties*>(storage_properties_.get())->storage_dims;
+//   VLOG(1) << "ReAllocate for DenseTensor with requested size: " << 
+//   if (holder_ != nullptr && place().GetType() != AllocationType::UNDEFINED) {
+//     mutable_data(place(), product(storage_dims));
+//   }
+// }
+
 void DenseTensor::ResetLoD(const LoD& lod) { meta_.lod = lod; }
 
 #define DATA_MEMBER_FUNC_INSTANTIATION(dtype)      \

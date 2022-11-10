@@ -138,6 +138,8 @@ class DenseTensor : public TensorBase,
   // void Resize(const DDim& dims);
   void ResizeAndAllocate(const DDim& dims);
 
+  void ReAllocateBySize(const int64_t size);
+
   DenseTensor& Resize(const DDim& dims);
 
   /// \brief Change the lod information in the metadata.

@@ -1130,7 +1130,7 @@ PADDLE_API {self.get_return_type(inplace_flag=True)} {api_func_name}({self.get_d
             else ', ' + self.kernel['use_gpudnn']
         )
         return f"""
-{code_indent}  VLOG(6) << "{self.api} API kernel key: [" << kernel_backend << ", " << kernel_layout << ", "<< kernel_data_type << "]";
+{code_indent}  VLOG(1) << "{self.api} API kernel key: [" << kernel_backend << ", " << kernel_layout << ", "<< kernel_data_type << "]";
 {code_indent}  auto kernel_result = phi::KernelFactory::Instance().SelectKernelOrThrowError(
 {code_indent}      "{kernel_name}", {{kernel_backend, kernel_layout, kernel_data_type}}{cudnn_args});
 {code_indent}  const auto& kernel = kernel_result.kernel;

@@ -272,7 +272,10 @@ class DatasetFolder(Dataset):
         if self.transform is not None:
             sample = self.transform(sample)
 
-        return sample, target
+        import numpy as np
+        return sample, np.array([target]).astype('int32')
+
+        #return sample, target
 
     def __len__(self):
         return len(self.samples)

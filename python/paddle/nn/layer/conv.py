@@ -14,11 +14,14 @@
 
 # TODO: define classes of convolutional neural network
 
+import os
 import numpy as np
 
+import paddle
 from paddle import get_flags
 from ...device import get_cudnn_version
 from .. import Layer
+from ... import tensor
 from ..initializer import Normal
 from .. import functional as F
 from ...fluid.layers import utils
@@ -162,6 +165,11 @@ class _ConvNd(Layer):
         self.bias = self.create_parameter(
             attr=self._bias_attr, shape=[self._out_channels], is_bias=True
         )
+
+        # if os.environ.get("FLAGS_use_acl_format", "OFF") == "ON":
+        #     with paddle.fluid.dygraph.no_grad():
+        #         bias_trans = tensor.npu_identity(self.bias, 3)
+        #         bias_trans._share_underline_tensor_to(self.bias)
 
         cudnn_version = get_cudnn_version()
 

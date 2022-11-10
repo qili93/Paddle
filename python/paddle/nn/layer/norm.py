@@ -44,8 +44,10 @@ import numbers
 import warnings
 from ...framework import no_grad
 from .. import functional as F
+import paddle
 from paddle import _C_ops, _legacy_C_ops
 from .. import Layer
+from ... import tensor
 from paddle import in_dynamic_mode
 from paddle.fluid.framework import in_dygraph_mode, _in_legacy_dygraph
 
@@ -689,6 +691,17 @@ class _BatchNormBase(Layer):
         )
         self._variance.stop_gradient = True
 
+        # if os.environ.get("FLAGS_use_acl_format", "OFF") == "ON":
+        with paddle.fluid.dygraph.no_grad():
+            weight_trans = tensor._npu_identity(self.weight, 3) # ACL_FORMAT_NC1HWC0 = 3
+            bias_trans = tensor._npu_identity(self.bias, 3) # ACL_FORMAT_NC1HWC0 = 3
+            mean_trans = tensor._npu_identity(self._mean, 3) # ACL_FORMAT_NC1HWC0 = 3
+            var_trans = tensor._npu_identity(self._variance, 3) # ACL_FORMAT_NC1HWC0 = 3
+            weight_trans._share_underline_tensor_to(self.weight)
+            bias_trans._share_underline_tensor_to(self.bias)
+            mean_trans._share_underline_tensor_to(self._mean)
+            var_trans._share_underline_tensor_to(self._variance)
+
         self._data_format = data_format
         self._in_place = False
         self._momentum = momentum
@@ -930,6 +943,8 @@ class BatchNorm2D(_BatchNormBase):
             raise ValueError('expected NCHW or NHWC for data_format input')
 
     def _check_input_dim(self, input):
+        # # Conv output is NC0HWC1 on Ascend CANN NPU
+        # pass
         if len(input.shape) != 4:
             raise ValueError(
                 'expected 4D input (got {}D input)'.format(len(input.shape))

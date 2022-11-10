@@ -14,18 +14,16 @@
 
 #pragma once
 
-#include "paddle/phi/api/include/tensor.h"
+#include "paddle/phi/common/scalar.h"
+#include "paddle/phi/core/dense_tensor.h"
+#include "paddle/phi/core/device_context.h"
 
-paddle::experimental::Tensor add_n_ad_func(
-    const std::vector<paddle::experimental::Tensor>& x);
+namespace phi {
 
-paddle::experimental::Tensor conv2d_ad_func(
-    const paddle::experimental::Tensor& input,
-    const paddle::experimental::Tensor& filter,
-    const paddle::experimental::Tensor& bias,
-    std::vector<int> strides,
-    std::vector<int> paddings,
-    std::string padding_algorithm,
-    std::vector<int> dilations,
-    int groups,
-    std::string data_format);
+template <typename T, typename Context>
+void NPUIdentityKernel(const Context& dev_ctx,
+                       const DenseTensor& x,
+                       const int format,
+                       DenseTensor* out);
+
+}  // namespace phi

@@ -17,6 +17,7 @@
 #include "paddle/phi/backends/cpu/cpu_context.h"
 #include "paddle/phi/core/kernel_registry.h"
 #include "paddle/phi/kernels/impl/conv_kernel_impl.h"
+#include "paddle/phi/kernels/elementwise_add_kernel.h"
 
 namespace phi {
 
@@ -24,6 +25,7 @@ template <typename T, typename Context>
 void ConvKernel(const Context& dev_ctx,
                 const DenseTensor& input,
                 const DenseTensor& filter,
+                const DenseTensor& bias,
                 const std::vector<int>& strides,
                 const std::vector<int>& paddings,
                 const std::string& padding_algorithm,
@@ -41,6 +43,7 @@ void ConvKernel(const Context& dev_ctx,
                     dilations,
                     data_format,
                     out);
+  AddKernel<T, Context>(dev_ctx, *out, bias, out);
 }
 
 template <typename T, typename Context>

@@ -22,6 +22,7 @@ template <typename T, typename Context>
 void ConvKernel(const Context& dev_ctx,
                 const DenseTensor& input,
                 const DenseTensor& filter,
+                const DenseTensor& bias,
                 const std::vector<int>& strides,
                 const std::vector<int>& paddings,
                 const std::string& padding_algorithm,

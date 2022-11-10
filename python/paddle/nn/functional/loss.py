@@ -2554,10 +2554,10 @@ def cross_entropy(
         label = paddle.unsqueeze(label, axis=axis)
 
     if in_dygraph_mode():
-        if not soft_label:
-            valid_label = (
-                paddle.cast(label != ignore_index, dtype=label.dtype) * label
-            )
+        # if not soft_label:
+        #     valid_label = (
+        #         paddle.cast(label != ignore_index, dtype=label.dtype) * label
+        #     )
         if core.is_compiled_with_npu() or core.is_compiled_with_mlu():
             if not soft_label:
                 _, _, out = _legacy_C_ops.softmax_with_cross_entropy(

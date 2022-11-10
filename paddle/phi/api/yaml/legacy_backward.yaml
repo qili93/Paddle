@@ -276,7 +276,7 @@
     func : conj
 
 - backward_op : conv2d_grad
-  forward : conv2d (Tensor input, Tensor filter, int[] strides, int[] paddings, str padding_algorithm, int[] dilations, int groups, str data_format) -> Tensor(out)
+  forward : conv2d (Tensor input, Tensor filter, Tensor bias, int[] strides, int[] paddings, str padding_algorithm, int[] dilations, int groups, str data_format) -> Tensor(out)
   args : (Tensor input, Tensor filter, Tensor out_grad,  int[] strides, int[] paddings, str padding_algorithm, int[] dilations, int groups, str data_format)
   output : Tensor(input_grad), Tensor(filter_grad)
   infer_meta :
